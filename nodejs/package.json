@@ -1,0 +1,43 @@
+{
+	"name": "node-webpack",
+	"author": {
+		"name": "Mahdi Abedi",
+		"email": "abedi@jeyserver.com"
+	},
+	"displayName": "Cli for webpack",
+	"version": "1.0.0",
+	"scripts": {
+		"build": "tsc",
+		"watch": "tsc -w",
+		"start": "node ./dist/Main.js"
+	},
+	"engines": {
+		"node": "^10.16.0"
+	},
+	"dependencies": {
+		"webpack": "~2.6.0",
+		"less": "~2.7.2",
+		"less-plugin-clean-css": "~1.5.1",
+		"ts-loader": "~2.1.0",
+		"extract-text-webpack-plugin": "~2.1.2",
+		"css-loader": "~0.28.4",
+		"file-loader": "~0.11.2",
+		"less-loader": "~4.0.4",
+		"style-loader": "~0.18.2",
+		"url-loader": "~0.5.9",
+		"webpack-webuilder-resolver": "^1.0.0",
+		"sass-loader": "^7.1.0",
+		"node-sass": "^4.11.0",
+		"precss": "^4.0.0",
+		"autoprefixer": "^9.4.7",
+		"postcss-loader": "^3.0.0"
+	},
+	"devDependencies": {
+		"@types/node": "^10.12.19",
+		"@types/npm": "^2.0.30",
+		"@types/webpack": "^4.4.34",
+		"semver": "^6.2.0",
+		"tslint": "^5.12.1",
+		"typescript": "^3.2.4"
+	}
+}

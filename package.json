@@ -1,0 +1,5 @@
+{
+	"permissions": "*",
+	"routing": "routing.json",
+	"dependencies": ["base"]
+}
