@@ -3,9 +3,12 @@ import { promisify } from "util";
 import Front from "./Front";
 
 export default class Package {
-	public constructor(private _name: string) {}
+	private _path: string;
+	public constructor(private _dir: string, private _name: string) {
+		this._path = this._dir + "/" + this._name;
+	}
 	public async getFrontends(): Promise<Front[]> {
-		const packagejson = this._name + "/" + "package.json";
+		const packagejson = this._path + "/" + "package.json";
 		const data = await promisify(fs.readFile)(packagejson, "utf8");
 		const file = JSON.parse(data);
 		if (! file.hasOwnProperty("frontend")) {
@@ -21,6 +24,9 @@ export default class Package {
 		return fronts;
 	}
 	public get path() {
+		return this._path;
+	}
+	public get name() {
 		return this._name;
 	}
 }

@@ -2,40 +2,60 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const fs = require("fs");
 const util_1 = require("util");
-const Asset_1 = require("./Asset");
 class Front {
     constructor(_package, _name) {
         this._package = _package;
         this._name = _name;
         this.assets = [];
+        this.entiesTypes = ["css", "less", "scss", "sass", "js", "ts"];
         this._path = _package.path + "/" + _name;
     }
-    async getAssets() {
-        if (!this.assets.length) {
-            const packagejson = this._path + "/package.json";
-            if (!await util_1.promisify(fs.exists)(packagejson)) {
-                return [];
-            }
-            const data = await util_1.promisify(fs.readFile)(packagejson, "UTF8");
-            const packages = JSON.parse(data);
-            if (!packages.hasOwnProperty("dependencies") && packages.hasOwnProperty("devDependencies")) {
-                return [];
-            }
-            for (const name in packages.dependencies) {
-                if (packages.dependencies[name] !== undefined) {
-                    this.assets.push(new Asset_1.default(name, packages.dependencies[name], this));
+    async initAssets() {
+        console.log("Try to init packages");
+        const theme = await this.getTheme();
+        if (!theme || !theme.hasOwnProperty("assets")) {
+            return;
+        }
+        const packagejson = this._path + "/package.json";
+        let packages = {};
+        if (await util_1.promisify(fs.exists)(packagejson)) {
+            packages = JSON.parse(await util_1.promisify(fs.readFile)(packagejson, "UTF8"));
+        }
+        if (!packages.hasOwnProperty("dependencies")) {
+            packages.dependencies = {};
+        }
+        let hasChange = false;
+        for (const asset of theme.assets) {
+            if (asset.type === "package") {
+                if (packages.dependencies[asset.name] === undefined) {
+                    packages.dependencies[asset.name] = asset.version ? asset.version : "latest";
+                    hasChange = true;
                 }
-            }
-            for (const name in packages.devDependencies) {
-                if (packages.devDependencies[name] !== undefined) {
-                    this.assets.push(new Asset_1.default(name, packages.dependencies[name], this));
+                else if (asset.version && packages.dependencies[asset.name] !== asset.version) {
+                    packages.dependencies[asset.name] = asset.version;
+                    hasChange = true;
                 }
             }
         }
-        return this.assets;
+        if (hasChange) {
+            await util_1.promisify(fs.writeFile)(packagejson, JSON.stringify(packages, null, 2), "utf8");
+        }
+    }
+    async getTheme() {
+        const themeJson = this._path + "/theme.json";
+        if (!await util_1.promisify(fs.exists)(themeJson)) {
+            return;
+        }
+        return JSON.parse(await util_1.promisify(fs.readFile)(themeJson, "UTF8"));
+    }
+    get name() {
+        return this._name;
     }
     get path() {
         return this._path;
+    }
+    get package() {
+        return this._package;
     }
 }
 exports.default = Front;

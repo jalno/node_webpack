@@ -9,9 +9,12 @@ class Main {
     static async run() {
         await Main.installDependecies();
         const packages = await Main.initPackages();
+        const entries = {};
         for (const p of packages) {
             const fronts = await p.getFrontends();
             for (const front of fronts) {
+                console.log("Package: ", front.package.name + " and front is: " + front.name);
+                await front.initAssets();
                 await Main.installAssets(front.path);
             }
         }
@@ -25,7 +28,7 @@ class Main {
         for (const file of files) {
             const packagepath = packagesPath + "/" + file.name;
             if (file.isDirectory() && await util_1.promisify(fs.exists)(packagepath + "/package.json")) {
-                packages.push(new Package_1.default(packagepath));
+                packages.push(new Package_1.default(packagesPath, file.name));
             }
         }
         return packages;
@@ -48,12 +51,13 @@ class Main {
                 throw new Error("Cannot find npm in your global repository");
             }
         }
-        const npm = require("npm");
-        Main.npm = npm;
+        Main.npm = require("npm");
+        console.log("Package: node-webpack");
         await Main.installAssets();
+        Main.webpack = require("webpack");
     }
     static async installAssets(where = "") {
-        console.log("try to install assets in: " + where);
+        console.log("Try to install assets");
         await new Promise((resolve, reject) => {
             Main.npm.load((err, result) => {
                 if (err) {

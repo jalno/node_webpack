@@ -4,11 +4,13 @@ const fs = require("fs");
 const util_1 = require("util");
 const Front_1 = require("./Front");
 class Package {
-    constructor(_name) {
+    constructor(_dir, _name) {
+        this._dir = _dir;
         this._name = _name;
+        this._path = this._dir + "/" + this._name;
     }
     async getFrontends() {
-        const packagejson = this._name + "/" + "package.json";
+        const packagejson = this._path + "/" + "package.json";
         const data = await util_1.promisify(fs.readFile)(packagejson, "utf8");
         const file = JSON.parse(data);
         if (!file.hasOwnProperty("frontend")) {
@@ -24,6 +26,9 @@ class Package {
         return fronts;
     }
     get path() {
+        return this._path;
+    }
+    get name() {
         return this._name;
     }
 }

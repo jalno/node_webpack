@@ -16,6 +16,8 @@ export default class Main {
 		for (const p of packages) {
 			const fronts = await p.getFrontends();
 			for (const front of fronts) {
+				console.log("Package: ", front.package.name + " and front is: " + front.name);
+				await front.initAssets();
 				await Main.installAssets(front.path);
 			}
 		}
@@ -31,7 +33,7 @@ export default class Main {
 		for (const file of files) {
 			const packagepath = packagesPath + "/" + file.name;
 			if (file.isDirectory() && await promisify(fs.exists)(packagepath + "/package.json")) {
-				packages.push(new Package(packagepath));
+				packages.push(new Package(packagesPath, file.name));
 			}
 		}
 		return packages;
@@ -53,11 +55,12 @@ export default class Main {
 			}
 		}
 		Main.npm = require("npm");
+		console.log("Package: node-webpack");
 		await Main.installAssets();
 		Main.webpack = require("webpack");
 	}
 	private static async installAssets(where = "") {
-		console.log("try to install assets in: " + where);
+		console.log("Try to install assets");
 		await new Promise((resolve, reject) => {
 			Main.npm.load((err, result) => {
 				if (err) {
@@ -75,6 +78,17 @@ export default class Main {
 					result, result2, result3, result4,
 				});
 			});
+		});
+	}
+	private static async runWebpack(packages: Package[]) {
+		const entries: {
+			[key: string]: string[],
+		} = {};
+		for (const p of packages) {
+			const fronts = [];
+		}
+		Main.webpack({
+
 		});
 	}
 }
