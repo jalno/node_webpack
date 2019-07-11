@@ -1,5 +1,13 @@
 {
 	"permissions": "*",
-	"routing": "routing.json",
-	"dependencies": ["base"]
+	"dependencies": ["base"],
+	"autoload": {
+		"directories": ["listeners"]
+	},
+	"events": [
+		{
+			"name":"\\packages\\base\\view\\events\\beforeLoad",
+			"listener": "listeners\\Base@beforeLoadView"
+		}
+	]
 }
