@@ -1,0 +1,37 @@
+{
+  "handledFiles": {
+    "clipone": [
+      "packages/cronjob/frontend/node_modules/select2/dist/css/select2.css",
+      "packages/cronjob/frontend/assets/less/tags.less",
+      "packages/cronjob/frontend/assets/less/schedules.less",
+      "packages/cronjob/frontend/assets/ts/Main.ts",
+      "packages/financial/frontend/assets/ts/Main.ts",
+      "packages/financial/frontend/assets/less/Main.less",
+      "packages/aradaccount/frontend/assets/less/main.less",
+      "packages/aradaccount/frontend/assets/ts/Main.ts",
+      "packages/aradaccount/frontend/assets/scss/Main.scss",
+      "packages/ticketing/frontend/node_modules/ion-rangeslider/css/ion.rangeSlider.css",
+      "packages/ticketing/frontend/node_modules/ion-rangeslider/css/ion.rangeSlider.skinHTML5.css",
+      "packages/ticketing/frontend/assets/ts/Main.ts",
+      "packages/ticketing/frontend/assets/less/main.less",
+      "packages/userpanel/frontend/node_modules/bootstrap/less/bootstrap.less",
+      "packages/userpanel/frontend/node_modules/bootstrap-rtl/less/bootstrap-rtl.less",
+      "packages/userpanel/frontend/node_modules/font-awesome/less/font-awesome.less",
+      "packages/userpanel/frontend/node_modules/jquery.growl/stylesheets/jquery.growl.css",
+      "packages/userpanel/frontend/node_modules/jquery-ui/themes/base/all.css",
+      "packages/userpanel/frontend/node_modules/jschr-bootstrap-modal/css/bootstrap-modal-bs3patch.css",
+      "packages/userpanel/frontend/node_modules/jschr-bootstrap-modal/css/bootstrap-modal.css",
+      "packages/userpanel/frontend/node_modules/malihu-custom-scrollbar-plugin/jquery.mCustomScrollbar.css",
+      "packages/userpanel/frontend/node_modules/jquery-bootstrap-checkbox/jquery-bootstrap-checkbox.less",
+      "packages/userpanel/frontend/node_modules/bootstrap-avatar-preview/avatarPreview.less",
+      "packages/userpanel/frontend/assets/less/main.less",
+      "packages/userpanel/frontend/assets/ts/pages/Main.ts"
+    ]
+  },
+  "outputedFiles": {
+    "clipone": [
+      "packages/node_webpack/storage/public/frontend/dist/clipone.css",
+      "packages/node_webpack/storage/public/frontend/dist/clipone.js"
+    ]
+  }
+}

@@ -2,16 +2,15 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const fs = require("fs");
 const util_1 = require("util");
+const Module_1 = require("./Module");
 class Front {
     constructor(_package, _name) {
         this._package = _package;
         this._name = _name;
-        this.assets = [];
         this.entiesTypes = ["css", "less", "scss", "sass", "js", "ts"];
         this._path = _package.path + "/" + _name;
     }
-    async initAssets() {
-        console.log("Try to init packages");
+    async initDependencies() {
         const theme = await this.getTheme();
         if (!theme || !theme.hasOwnProperty("assets")) {
             return;
@@ -40,6 +39,48 @@ class Front {
         if (hasChange) {
             await util_1.promisify(fs.writeFile)(packagejson, JSON.stringify(packages, null, 2), "utf8");
         }
+    }
+    async getModules() {
+        const node_modules = this._path + "/node_modules";
+        const json = this._path + "/package.json";
+        const exists = util_1.promisify(fs.exists);
+        if (!await exists(node_modules) ||
+            !await exists(json)) {
+            return;
+        }
+        const packages = JSON.parse(await util_1.promisify(fs.readFile)(json, "UTF8"));
+        const assets = [];
+        for (const name in packages.dependencies) {
+            if (packages.dependencies[name] !== undefined) {
+                const path = node_modules + "/" + name + "/package.json";
+                if (await exists(path)) {
+                    const node = JSON.parse(await util_1.promisify(fs.readFile)(path, "UTF8"));
+                    if (packages.dependencies[name] === "latest") {
+                        packages.dependencies[name] = "^" + node.version;
+                    }
+                    assets.push(new Module_1.default(name, node.version, node.hasOwnProperty("main") ? node.main : "index.js", packages.dependencies[name], this));
+                }
+            }
+        }
+        return assets;
+    }
+    async getEntries() {
+        const theme = await this.getTheme();
+        if (!theme) {
+            return;
+        }
+        const entries = [];
+        if (theme.hasOwnProperty("assets")) {
+            for (const asset of theme.assets) {
+                if (this.entiesTypes.indexOf(asset.type) > -1) {
+                    entries.push(this._path + "/" + asset.file);
+                }
+            }
+        }
+        return {
+            name: theme.name,
+            entries: entries,
+        };
     }
     async getTheme() {
         const themeJson = this._path + "/theme.json";

@@ -1,29 +1,35 @@
 import * as child_process from "child_process";
 import * as fs from "fs";
 import * as path from "path";
+import * as semver from "semver";
 import { promisify } from "util";
 import Front from "./Front";
+import JalnoResolver from "./JalnoResolver";
 import Package from "./Package";
+
+export interface IEntries {
+	[key: string]: string[];
+}
 
 export default class Main {
 	public static async run() {
 		await Main.installDependecies();
 		const packages = await Main.initPackages();
-		// const assets = await Main.installAssets(packages);
-		const entries: {
-			[key: string]: string[],
-		} = {};
+		const fronts: Front[] = [];
 		for (const p of packages) {
-			const fronts = await p.getFrontends();
-			for (const front of fronts) {
+			const packageFronts = await p.getFrontends();
+			fronts.push(...packageFronts);
+			for (const front of packageFronts) {
 				console.log("Package: ", front.package.name + " and front is: " + front.name);
-				await front.initAssets();
-				await Main.installAssets(front.path);
+				await front.initDependencies();
+				await Main.installDependencies(front.path);
 			}
 		}
+
+		await JalnoResolver.initSources(fronts);
+		Main.runWebpack(fronts);
 	}
 	private static npm;
-	private static webpack;
 	private static async initPackages(): Promise<Package[]> {
 		const packagesPath = path.resolve("../..");
 		const files = await promisify(fs.readdir)(packagesPath, {
@@ -56,10 +62,9 @@ export default class Main {
 		}
 		Main.npm = require("npm");
 		console.log("Package: node-webpack");
-		await Main.installAssets();
-		Main.webpack = require("webpack");
+		await Main.installDependencies();
 	}
-	private static async installAssets(where = "") {
+	private static async installDependencies(where = "") {
 		console.log("Try to install assets");
 		await new Promise((resolve, reject) => {
 			Main.npm.load((err, result) => {
@@ -80,15 +85,132 @@ export default class Main {
 			});
 		});
 	}
-	private static async runWebpack(packages: Package[]) {
-		const entries: {
-			[key: string]: string[],
-		} = {};
-		for (const p of packages) {
-			const fronts = [];
+	private static async runWebpack(fronts: Front[]) {
+		const webpack = require("webpack");
+		const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+		const CleanCSSPlugin = require("less-plugin-clean-css");
+		const precss = require("precss");
+		const autoprefixer = require("autoprefixer");
+		const entries: IEntries = {};
+		for (const front of fronts) {
+			const frontEntries = await front.getEntries();
+			if (frontEntries !== undefined) {
+				if (entries[frontEntries.name] === undefined) {
+					entries[frontEntries.name] = frontEntries.entries;
+				} else {
+					entries[frontEntries.name] = entries[frontEntries.name].concat(frontEntries.entries);
+				}
+			}
 		}
-		Main.webpack({
-
+		const outputPath = path.resolve(__dirname + "/../../storage/public/frontend/dist");
+		webpack({
+			entry: entries,
+			stats: {
+				all: false,
+				colors: false,
+				modules: false,
+			},
+			output: {
+				filename: "[name].js",
+				chunkFilename: "[name].js",
+				path: outputPath,
+			},
+			resolve: {
+				plugins: [new JalnoResolver("module", "resolve")],
+				extensions: [".ts", ".js", ".less", ".css", ".sass", ".scss"],
+			},
+			module: {
+				rules: [
+					{
+						test: /\.(sc|sa|c)ss$/,
+						use: [
+							MiniCssExtractPlugin.loader,
+							"css-loader",
+							{
+								loader: "postcss-loader",
+								options: {
+									plugins: () => {
+										return [precss, autoprefixer];
+									},
+								},
+							},
+							"sass-loader",
+						],
+					},
+					{
+						test: /\.(less)$/,
+						use: [
+							MiniCssExtractPlugin.loader,
+							"css-loader",
+							{
+								loader: "less-loader",
+							},
+						],
+					},
+					{ test: /\.json$/, loader: "json-loader" },
+					{ test: /\.png$/, loader: "file-loader" },
+					{ test: /\.jpg$/, loader: "file-loader" },
+					{ test: /\.gif$/, loader: "file-loader" },
+					{ test: /\.woff2?$/, loader: "file-loader" },
+					{ test: /\.eot$/, loader: "file-loader" },
+					{ test: /\.ttf$/, loader: "file-loader" },
+					{ test: /\.svg$/, loader: "file-loader" },
+					{
+						test: /\.tsx?$/,
+						loader: "ts-loader",
+						options: {
+							transpileOnly: true,
+							logLevel: "warn",
+							compilerOptions: {
+								sourceMap: false,
+							},
+						},
+					 },
+				],
+			},
+			mode: "development",
+			plugins: [
+				new MiniCssExtractPlugin({
+					filename: "[name].css",
+				}),
+				new webpack.ProvidePlugin({
+					"$": "jquery",
+					"jQuery": "jquery",
+					"window.jQuery": "jquery",
+				}),
+			],
+		}, async (err, stats) => {
+			if (err) {
+				throw new Error(err);
+			}
+			const basePath = path.resolve(__dirname + "/../../../..");
+			const offset = (basePath + "/").length;
+			for (const name in entries) {
+				if (entries[name] !== undefined) {
+					for (const key in entries[name]) {
+						if (entries[name][key] !== undefined) {
+							entries[name][key] = entries[name][key].substr(offset);
+						}
+					}
+				}
+			}
+			const result = {
+				handledFiles: entries,
+				outputedFiles: {},
+			} as any;
+			const exists = promisify(fs.exists);
+			for (const chunk of stats.compilation.chunks) {
+				for (const file of chunk.files) {
+					const filePath = path.resolve(outputPath, file);
+					if (result.outputedFiles[chunk.id] === undefined) {
+						result.outputedFiles[chunk.id] = [];
+					}
+					if (await exists(filePath)) {
+						result.outputedFiles[chunk.id].push(filePath.substr(offset));
+					}
+				}
+			}
+			await promisify(fs.writeFile)(path.resolve(__dirname + "/../result.json"), JSON.stringify(result, null, 2), "UTF8");
 		});
 	}
 }
