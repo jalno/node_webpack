@@ -108,7 +108,11 @@ export default class Main {
 				if (entries[frontEntries.name] === undefined) {
 					entries[frontEntries.name] = frontEntries.entries;
 				} else {
-					entries[frontEntries.name] = entries[frontEntries.name].concat(frontEntries.entries);
+					for (const entry of frontEntries.entries) {
+						if (entries[frontEntries.name].indexOf(entry) === -1) {
+							entries[frontEntries.name].push(entry);
+						}
+					}
 				}
 			}
 		}
