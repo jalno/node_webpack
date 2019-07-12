@@ -29,13 +29,13 @@
 		"style-loader": "~0.23.1",
 		"ts-loader": "~6.0.4",
 		"url-loader": "~2.0.1",
-		"webpack": "~4.35.3"
+		"webpack": "~4.35.3",
+		"semver": "^6.2.0"
 	},
 	"devDependencies": {
 		"@types/node": "^10.12.19",
 		"@types/npm": "^2.0.30",
 		"@types/webpack": "^4.4.34",
-		"semver": "^6.2.0",
 		"tslint": "^5.12.1",
 		"typescript": "^3.2.4",
 		"webpack-cli": "^3.3.5"
