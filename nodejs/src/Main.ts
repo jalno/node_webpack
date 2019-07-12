@@ -1,7 +1,6 @@
 import * as child_process from "child_process";
 import * as fs from "fs";
 import * as path from "path";
-import * as semver from "semver";
 import { promisify } from "util";
 import Front from "./Front";
 import JalnoResolver from "./JalnoResolver";
@@ -25,11 +24,12 @@ export default class Main {
 				await Main.installDependencies(front.path);
 			}
 		}
-
-		await JalnoResolver.initSources(fronts);
+		Main.JalnoResolver = require("./JalnoResolver") as JalnoResolver;
+		await Main.JalnoResolver.initSources(fronts);
 		Main.runWebpack(fronts);
 	}
 	private static npm;
+	private static JalnoResolver: any;
 	private static async initPackages(): Promise<Package[]> {
 		const packagesPath = path.resolve("../..");
 		const files = await promisify(fs.readdir)(packagesPath, {
@@ -116,7 +116,7 @@ export default class Main {
 				path: outputPath,
 			},
 			resolve: {
-				plugins: [new JalnoResolver("module", "resolve")],
+				plugins: [new Main.JalnoResolver("module", "resolve")],
 				extensions: [".ts", ".js", ".less", ".css", ".sass", ".scss"],
 			},
 			module: {

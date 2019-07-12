@@ -4,7 +4,6 @@ const child_process = require("child_process");
 const fs = require("fs");
 const path = require("path");
 const util_1 = require("util");
-const JalnoResolver_1 = require("./JalnoResolver");
 const Package_1 = require("./Package");
 class Main {
     static async run() {
@@ -20,7 +19,8 @@ class Main {
                 await Main.installDependencies(front.path);
             }
         }
-        await JalnoResolver_1.default.initSources(fronts);
+        Main.JalnoResolver = require("./JalnoResolver");
+        await Main.JalnoResolver.initSources(fronts);
         Main.runWebpack(fronts);
     }
     static async initPackages() {
@@ -112,7 +112,7 @@ class Main {
                 path: outputPath,
             },
             resolve: {
-                plugins: [new JalnoResolver_1.default("module", "resolve")],
+                plugins: [new Main.JalnoResolver("module", "resolve")],
                 extensions: [".ts", ".js", ".less", ".css", ".sass", ".scss"],
             },
             module: {
