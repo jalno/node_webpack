@@ -7,6 +7,7 @@ const util_1 = require("util");
 const Package_1 = require("./Package");
 class Main {
     static async run() {
+        process.chdir(__dirname);
         await Main.installDependecies();
         const packages = await Main.initPackages();
         const fronts = [];
@@ -19,18 +20,18 @@ class Main {
                 await Main.installDependencies(front.path);
             }
         }
-        Main.JalnoResolver = require("./JalnoResolver");
+        Main.JalnoResolver = require("./JalnoResolver").default;
         await Main.JalnoResolver.initSources(fronts);
         Main.runWebpack(fronts);
     }
     static async initPackages() {
-        const packagesPath = path.resolve("../..");
+        const packagesPath = path.resolve("..", "..", "..");
         const files = await util_1.promisify(fs.readdir)(packagesPath, {
             withFileTypes: true,
         });
         const packages = [];
         for (const file of files) {
-            const packagepath = packagesPath + "/" + file.name;
+            const packagepath = path.resolve(packagesPath, file.name);
             if (file.isDirectory() && await util_1.promisify(fs.exists)(packagepath + "/package.json")) {
                 packages.push(new Package_1.default(packagesPath, file.name));
             }
@@ -98,7 +99,7 @@ class Main {
                 }
             }
         }
-        const outputPath = path.resolve(__dirname + "/../../storage/public/frontend/dist");
+        const outputPath = path.resolve("..", "..", "storage", "public", "frontend", "dist");
         webpack({
             entry: entries,
             stats: {
@@ -179,7 +180,7 @@ class Main {
             if (err) {
                 throw new Error(err);
             }
-            const basePath = path.resolve(__dirname + "/../../../..");
+            const basePath = path.resolve("..", "..", "..", "..");
             const offset = (basePath + "/").length;
             for (const name in entries) {
                 if (entries[name] !== undefined) {
@@ -206,7 +207,7 @@ class Main {
                     }
                 }
             }
-            await util_1.promisify(fs.writeFile)(path.resolve(__dirname + "/../result.json"), JSON.stringify(result, null, 2), "UTF8");
+            await util_1.promisify(fs.writeFile)(path.resolve(__dirname + "..", "result.json"), JSON.stringify(result, null, 2), "UTF8");
         });
     }
 }

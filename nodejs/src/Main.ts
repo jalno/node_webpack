@@ -12,6 +12,7 @@ export interface IEntries {
 
 export default class Main {
 	public static async run() {
+		process.chdir(__dirname);
 		await Main.installDependecies();
 		const packages = await Main.initPackages();
 		const fronts: Front[] = [];
@@ -24,20 +25,20 @@ export default class Main {
 				await Main.installDependencies(front.path);
 			}
 		}
-		Main.JalnoResolver = require("./JalnoResolver") as JalnoResolver;
+		Main.JalnoResolver = require("./JalnoResolver").default as JalnoResolver;
 		await Main.JalnoResolver.initSources(fronts);
 		Main.runWebpack(fronts);
 	}
-	private static npm;
+	private static npm: any;
 	private static JalnoResolver: any;
 	private static async initPackages(): Promise<Package[]> {
-		const packagesPath = path.resolve("../..");
+		const packagesPath = path.resolve("..", "..", "..");
 		const files = await promisify(fs.readdir)(packagesPath, {
 			withFileTypes: true,
 		});
 		const packages = [];
 		for (const file of files) {
-			const packagepath = packagesPath + "/" + file.name;
+			const packagepath = path.resolve(packagesPath , file.name);
 			if (file.isDirectory() && await promisify(fs.exists)(packagepath + "/package.json")) {
 				packages.push(new Package(packagesPath, file.name));
 			}
@@ -102,7 +103,7 @@ export default class Main {
 				}
 			}
 		}
-		const outputPath = path.resolve(__dirname + "/../../storage/public/frontend/dist");
+		const outputPath = path.resolve("..", "..", "storage", "public", "frontend", "dist");
 		webpack({
 			entry: entries,
 			stats: {
@@ -183,7 +184,7 @@ export default class Main {
 			if (err) {
 				throw new Error(err);
 			}
-			const basePath = path.resolve(__dirname + "/../../../..");
+			const basePath = path.resolve("..", "..", "..", "..");
 			const offset = (basePath + "/").length;
 			for (const name in entries) {
 				if (entries[name] !== undefined) {
@@ -210,7 +211,7 @@ export default class Main {
 					}
 				}
 			}
-			await promisify(fs.writeFile)(path.resolve(__dirname + "/../result.json"), JSON.stringify(result, null, 2), "UTF8");
+			await promisify(fs.writeFile)(path.resolve(__dirname + "..", "result.json"), JSON.stringify(result, null, 2), "UTF8");
 		});
 	}
 }
