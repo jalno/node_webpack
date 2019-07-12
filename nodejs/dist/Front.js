@@ -44,17 +44,18 @@ class Front {
         const node_modules = this._path + "/node_modules";
         const json = this._path + "/package.json";
         const exists = util_1.promisify(fs.exists);
+        const readFile = util_1.promisify(fs.readFile);
         if (!await exists(node_modules) ||
             !await exists(json)) {
-            return;
+            return [];
         }
-        const packages = JSON.parse(await util_1.promisify(fs.readFile)(json, "UTF8"));
+        const packages = JSON.parse(await readFile(json, "UTF8"));
         const assets = [];
         for (const name in packages.dependencies) {
             if (packages.dependencies[name] !== undefined) {
                 const path = node_modules + "/" + name + "/package.json";
                 if (await exists(path)) {
-                    const node = JSON.parse(await util_1.promisify(fs.readFile)(path, "UTF8"));
+                    const node = JSON.parse(await readFile(path, "UTF8"));
                     if (packages.dependencies[name] === "latest") {
                         packages.dependencies[name] = "^" + node.version;
                     }
