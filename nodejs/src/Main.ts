@@ -2,6 +2,7 @@ import * as child_process from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import { promisify } from "util";
+import * as webpackTypes from "webpack";
 import Front from "./Front";
 import JalnoResolver from "./JalnoResolver";
 import Package from "./Package";
@@ -117,85 +118,103 @@ export default class Main {
 			}
 		}
 		const outputPath = path.resolve("..", "..", "storage", "public", "frontend", "dist");
-		webpack({
-			entry: entries,
-			stats: {
-				all: false,
-				colors: false,
-				modules: false,
-			},
-			output: {
-				filename: "[name].js",
-				chunkFilename: "[name].js",
-				path: outputPath,
-			},
-			resolve: {
-				plugins: [new Main.JalnoResolver("module", "resolve")],
-				extensions: [".ts", ".js", ".less", ".css", ".sass", ".scss"],
-			},
-			module: {
-				rules: [
-					{
-						test: /\.(sc|sa|c)ss$/,
-						use: [
-							MiniCssExtractPlugin.loader,
-							"css-loader",
-							{
-								loader: "postcss-loader",
-								options: {
-									plugins: () => {
-										return [precss, autoprefixer];
+		let compiler: webpackTypes.Compiler;
+		try {
+			compiler = webpack({
+				entry: entries,
+				stats: {
+					all: false,
+					colors: false,
+					modules: false,
+				},
+				output: {
+					filename: "[name].js",
+					chunkFilename: "[name].js",
+					path: outputPath,
+				},
+				resolve: {
+					plugins: [new Main.JalnoResolver("module", "resolve")],
+					extensions: [".ts", ".js", ".less", ".css", ".sass", ".scss"],
+				},
+				module: {
+					rules: [
+						{
+							test: /\.(sc|sa|c)ss$/,
+							use: [
+								MiniCssExtractPlugin.loader,
+								"css-loader",
+								{
+									loader: "postcss-loader",
+									options: {
+										plugins: () => {
+											return [precss, autoprefixer];
+										},
 									},
 								},
-							},
-							"sass-loader",
-						],
-					},
-					{
-						test: /\.(less)$/,
-						use: [
-							MiniCssExtractPlugin.loader,
-							"css-loader",
-							{
-								loader: "less-loader",
-							},
-						],
-					},
-					{ test: /\.json$/, loader: "json-loader" },
-					{ test: /\.png$/, loader: "file-loader" },
-					{ test: /\.jpg$/, loader: "file-loader" },
-					{ test: /\.gif$/, loader: "file-loader" },
-					{ test: /\.woff2?$/, loader: "file-loader" },
-					{ test: /\.eot$/, loader: "file-loader" },
-					{ test: /\.ttf$/, loader: "file-loader" },
-					{ test: /\.svg$/, loader: "file-loader" },
-					{
-						test: /\.tsx?$/,
-						loader: "ts-loader",
-						options: {
-							transpileOnly: true,
-							logLevel: "warn",
-							compilerOptions: {
-								sourceMap: false,
+								"sass-loader",
+							],
+						},
+						{
+							test: /\.(less)$/,
+							use: [
+								MiniCssExtractPlugin.loader,
+								"css-loader",
+								{
+									loader: "less-loader",
+								},
+							],
+						},
+						{ test: /\.json$/, loader: "json-loader" },
+						{ test: /\.png$/, loader: "file-loader" },
+						{ test: /\.jpg$/, loader: "file-loader" },
+						{ test: /\.gif$/, loader: "file-loader" },
+						{ test: /\.woff2?$/, loader: "file-loader" },
+						{ test: /\.eot$/, loader: "file-loader" },
+						{ test: /\.ttf$/, loader: "file-loader" },
+						{ test: /\.svg$/, loader: "file-loader" },
+						{
+							test: /\.tsx?$/,
+							loader: "ts-loader",
+							options: {
+								transpileOnly: true,
+								logLevel: "warn",
+								compilerOptions: {
+									sourceMap: false,
+								},
 							},
 						},
-					 },
+					],
+				},
+				mode: "development",
+				plugins: [
+					new MiniCssExtractPlugin({
+						filename: "[name].css",
+					}),
+					new webpack.ProvidePlugin({
+						"$": "jquery",
+						"jQuery": "jquery",
+						"window.jQuery": "jquery",
+					}),
 				],
-			},
-			mode: "development",
-			plugins: [
-				new MiniCssExtractPlugin({
-					filename: "[name].css",
-				}),
-				new webpack.ProvidePlugin({
-					"$": "jquery",
-					"jQuery": "jquery",
-					"window.jQuery": "jquery",
-				}),
-			],
-		}, async (err, stats) => {
+			});
+		} catch (err) {
+			if (err.name === "WebpackOptionsValidationError") {
+				console.error(`\u001b[1m\u001b[31m${err.message}\u001b[39m\u001b[22m`);
+				process.exit(1);
+			}
+
+			throw err;
+		}
+
+		if (process.stderr.isTTY) {
+			(process.stderr as any).clearLine(0);
+		}
+		new webpack.ProgressPlugin({
+			profile: false,
+		}).apply(compiler);
+		compiler.run(async (err, stats) => {
 			if (err) {
-				throw new Error(err);
+				throw err;
 			}
 			const basePath = path.resolve("..", "..", "..", "..");
 			const offset = (basePath + "/").length;
@@ -211,7 +230,7 @@ export default class Main {
 			const result = {
 				handledFiles: entries,
 				outputedFiles: {},
-			} as any;
+			};
 			const exists = promisify(fs.exists);
 			for (const chunk of stats.compilation.chunks) {
 				for (const file of chunk.files) {
@@ -224,7 +243,7 @@ export default class Main {
 					}
 				}
 			}
-			await promisify(fs.writeFile)(path.resolve(__dirname + "..", "result.json"), JSON.stringify(result, null, 2), "UTF8");
+			await promisify(fs.writeFile)(path.resolve("..", "result.json"), JSON.stringify(result, null, 2), "UTF8");
 		});
 	}
 }
