@@ -46,7 +46,7 @@ export default class Main {
 		return packages;
 	}
 	private static async installDependecies() {
-		if (!await promisify(fs.exists)("node_modules/npm")) {
+		if (!await promisify(fs.exists)(path.resolve("..", "node_modules", "npm"))) {
 			let npmBin: string;
 			try {
 				const out = await promisify(child_process.exec)("which npm");
