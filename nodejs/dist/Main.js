@@ -79,6 +79,7 @@ class Main {
             });
         });
         await new Promise((resolve, reject) => {
+            Main.npm.config.set("unsafe-perm", true);
             Main.npm.commands.install(where, [], (err, result, result2, result3, result4) => {
                 if (err) {
                     return reject(err);
