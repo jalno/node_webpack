@@ -59,6 +59,14 @@ class Main {
         Main.npm = require("npm");
         console.log("Package: node-webpack");
         await Main.installDependencies();
+        await new Promise((resolve, reject) => {
+            Main.npm.link("npm", (err) => {
+                if (err) {
+                    return reject(err);
+                }
+                resolve();
+            });
+        });
     }
     static async installDependencies(where = "") {
         console.log("Try to install assets");
