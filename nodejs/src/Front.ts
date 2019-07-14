@@ -1,4 +1,5 @@
 import * as fs from "fs";
+import * as path from "path";
 import { promisify } from "util";
 import Module from "./Module";
 import Package from "./Package";
@@ -17,7 +18,7 @@ export interface IEntries {
 
 export default class Front {
 	private _path: string;
-	private entiesTypes = ["css", "less", "scss", "sass", "js", "ts"];
+	private entriesTypes = ["css", "less", "scss", "sass", "js", "ts"];
 	public constructor(private _package: Package, private _name: string) {
 		this._path = _package.path + "/" + _name;
 	}
@@ -91,7 +92,7 @@ export default class Front {
 		const entries = [];
 		if (theme.hasOwnProperty("assets")) {
 			for (const asset of theme.assets as IAsset[]) {
-				if (this.entiesTypes.indexOf(asset.type) > -1) {
+				if (this.entriesTypes.indexOf(asset.type) > -1) {
 					entries.push(this._path + "/" + asset.file);
 				}
 			}
@@ -107,6 +108,34 @@ export default class Front {
 			return;
 		}
 		return JSON.parse(await promisify(fs.readFile)(themeJson, "UTF8"));
+	}
+	public async clean(filePath = ""): Promise<void> {
+		if (! filePath) {
+			filePath = path.resolve(this._path, "node_modules");
+		}
+		if (! await promisify(fs.exists)(filePath)) {
+			return;
+		}
+		const unlink = promisify(fs.unlink);
+		if (! (await promisify(fs.lstat)(filePath)).isDirectory()) {
+			return await unlink(filePath);
+		}
+		const files = await promisify(fs.readdir)(filePath, {
+			withFileTypes: true,
+		});
+		if (files.length > 0) {
+			const promises: Array<Promise<void>> = [];
+			for (const file of files) {
+				const fpath = path.resolve(filePath, file.name);
+				if (file.isDirectory()) {
+					promises.push(this.clean(fpath));
+				} else {
+					promises.push(unlink(fpath));
+				}
+			}
+			await Promise.all(promises);
+		}
+		return promisify(fs.rmdir)(filePath);
 	}
 	public get name() {
 		return this._name;

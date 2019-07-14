@@ -1,13 +1,14 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const fs = require("fs");
+const path = require("path");
 const util_1 = require("util");
 const Module_1 = require("./Module");
 class Front {
     constructor(_package, _name) {
         this._package = _package;
         this._name = _name;
-        this.entiesTypes = ["css", "less", "scss", "sass", "js", "ts"];
+        this.entriesTypes = ["css", "less", "scss", "sass", "js", "ts"];
         this._path = _package.path + "/" + _name;
     }
     async initDependencies() {
@@ -73,7 +74,7 @@ class Front {
         const entries = [];
         if (theme.hasOwnProperty("assets")) {
             for (const asset of theme.assets) {
-                if (this.entiesTypes.indexOf(asset.type) > -1) {
+                if (this.entriesTypes.indexOf(asset.type) > -1) {
                     entries.push(this._path + "/" + asset.file);
                 }
             }
@@ -89,6 +90,35 @@ class Front {
             return;
         }
         return JSON.parse(await util_1.promisify(fs.readFile)(themeJson, "UTF8"));
+    }
+    async clean(filePath = "") {
+        if (!filePath) {
+            filePath = path.resolve(this._path, "node_modules");
+        }
+        if (!await util_1.promisify(fs.exists)(filePath)) {
+            return;
+        }
+        const unlink = util_1.promisify(fs.unlink);
+        if (!(await util_1.promisify(fs.lstat)(filePath)).isDirectory()) {
+            return await unlink(filePath);
+        }
+        const files = await util_1.promisify(fs.readdir)(filePath, {
+            withFileTypes: true,
+        });
+        if (files.length > 0) {
+            const promises = [];
+            for (const file of files) {
+                const fpath = path.resolve(filePath, file.name);
+                if (file.isDirectory()) {
+                    promises.push(this.clean(fpath));
+                }
+                else {
+                    promises.push(unlink(fpath));
+                }
+            }
+            await Promise.all(promises);
+        }
+        return util_1.promisify(fs.rmdir)(filePath);
     }
     get name() {
         return this._name;

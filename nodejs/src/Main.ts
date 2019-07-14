@@ -4,34 +4,151 @@ import * as path from "path";
 import { promisify } from "util";
 import * as webpackTypes from "webpack";
 import Front from "./Front";
-import JalnoResolver from "./JalnoResolver";
+import JalnoResolver, { IModules } from "./JalnoResolver";
 import Package from "./Package";
 
 export interface IEntries {
 	[key: string]: string[];
 }
 
+type webpackMode = "production" | "development";
+
 export default class Main {
 	public static async run() {
+		if (process.argv.length > 2) {
+			Main.checkArgs();
+			if (process.argv.indexOf("-h") !== -1 || process.argv.indexOf("--help") !== -1) {
+				return Main.introduce();
+			}
+			for (let i = 2; i < process.argv.length; i++) {
+				switch (process.argv[i]) {
+					case "-w":
+					case "--watch":
+						Main.watch = true;
+						console.log("run webpack on watch mode");
+						break;
+					case "--write-webpack-config":
+					case "--wwc":
+						Main.writeWebpackConfig = true;
+						console.log("run webpack on watch mode");
+						break;
+					case "--skip-install":
+					case "--webpack":
+						Main.skipInstall = true;
+						console.log("skip install dependencies");
+						break;
+					case "--clear":
+					case "-c":
+						Main.clean = true;
+						console.log("remove packages node_modules");
+						break;
+					case "-i":
+					case "--install":
+					case "--skip-webpack":
+						Main.skipWebpack = true;
+						console.log("skip run webpack");
+						break;
+					case "--production":
+						Main.mode = "production";
+						console.log("run webpack on production mode");
+						break;
+				}
+			}
+		}
 		process.chdir(__dirname);
-		await Main.installDependecies();
+		await Main.initDependencies();
 		const packages = await Main.initPackages();
 		const fronts: Front[] = [];
 		for (const p of packages) {
 			const packageFronts = await p.getFrontends();
 			fronts.push(...packageFronts);
 			for (const front of packageFronts) {
-				console.log("Package: ", front.package.name + " and front is: " + front.name);
+				if (Main.clean) {
+					await front.clean();
+				}
 				await front.initDependencies();
 				await Main.installDependencies(front.path);
 			}
 		}
-		Main.JalnoResolver = require("./JalnoResolver").default as JalnoResolver;
-		await Main.JalnoResolver.initSources(fronts);
-		Main.runWebpack(fronts);
+		let entries: IEntries = {};
+		if (! Main.skipWebpack || Main.writeWebpackConfig) {
+			Main.JalnoResolver = require("./JalnoResolver").default as JalnoResolver;
+			await Main.JalnoResolver.initSources(fronts);
+			entries = await Main.getEntries(fronts);
+		}
+		if (! Main.skipWebpack) {
+			Main.runWebpack(entries);
+		}
+		if (Main.writeWebpackConfig) {
+			const moudles = Main.JalnoResolver.getModules();
+			Main.exportWebpackConfig(moudles, entries);
+		}
 	}
 	private static npm: any;
 	private static JalnoResolver: any;
+	private static watch = false;
+	private static skipInstall = false;
+	private static writeWebpackConfig = false;
+	private static skipWebpack = false;
+	private static clean = false;
+	private static mode: webpackMode = "development";
+	private static checkArgs() {
+		for (let i = 2; i < process.argv.length; i++) {
+			switch (process.argv[i]) {
+				case "-h":
+				case "--help":
+				case "-w":
+				case "--watch":
+				case "--write-webpack-config":
+				case "--wwc":
+				case "--skip-install":
+				case "--webpack":
+				case "--clear":
+				case "-c":
+				case "-i":
+				case "--install":
+				case "--skip-webpack":
+				case "--production":
+					continue;
+				default:
+					console.error(`\u001b[1m\u001b[31mCommand line option ${process.argv[i]} is not understood in combination with the other options\u001b[39m\u001b[22m`);
+					process.exit(1);
+			}
+		}
+		if (
+			(process.argv.indexOf("--skip-install") !== -1 || process.argv.indexOf("--webpack") !== -1) &&
+			(process.argv.indexOf("-i") !== -1 || process.argv.indexOf("--skip-webpack") !== -1 || process.argv.indexOf("--install") !== -1) &&
+			process.argv.indexOf("--wwc") === -1 && process.argv.indexOf("--write-webpack-config") === -1 &&
+			process.argv.indexOf("-c") === -1 && process.argv.indexOf("--clear") === -1
+		) {
+			console.error(`\u001b[1m\u001b[31mConnot use skip webpack and skip install options in same time\u001b[39m\u001b[22m`);
+			process.exit(1);
+		}
+		if (
+			(process.argv.indexOf("-w") !== -1 || process.argv.indexOf("--watch") !== -1) &&
+			(process.argv.indexOf("--skip-webpack") !== -1 || process.argv.indexOf("--install") !== -1)
+		) {
+			console.error(`\u001b[1m\u001b[31mConnot use skip webpack and watch webpack options in same time\u001b[39m\u001b[22m`);
+			process.exit(1);
+		}
+	}
+	private static introduce() {
+		console.log(`Node Webpack ${process.env.npm_package_version}\n
+usage npm run [options] [-- ...args] command\n
+node webpack is a commandline package manager and provides commands for
+installing and managing as well as querying information about packages.\n
+Most used commands:
+	build - compile source files
+	start - install dependencies and run webpack
+Options:
+	-h, --help			Print this message.
+	--w, --watch			Turn on webpack watch mode. This means that after the initial build, webpack will continue to watch for changes in any of the resolved files.
+	--wwc, --write-webpack-config	Export webpack config to webpack.config.js .
+	--webpack, --skip-install	Skip install dependencies and just run webpack.
+	-i, --install, --skip-webpack	Skip webpack and just install dependencies.
+	--c, --clear			Remove package node_modules.
+	--production			Change webpack mode to production [default is development]`);
+	}
 	private static async initPackages(): Promise<Package[]> {
 		const packagesPath = path.resolve("..", "..", "..");
 		const files = await promisify(fs.readdir)(packagesPath, {
@@ -46,8 +163,11 @@ export default class Main {
 		}
 		return packages;
 	}
-	private static async installDependecies() {
-		if (!await promisify(fs.exists)(path.resolve("..", "node_modules", "npm"))) {
+	private static async initDependencies() {
+		if (Main.skipInstall) {
+			return;
+		}
+		if (! await promisify(fs.exists)(path.resolve("..", "node_modules", "npm"))) {
 			let npmBin: string;
 			try {
 				const out = await promisify(child_process.exec)("which npm");
@@ -63,7 +183,6 @@ export default class Main {
 			}
 		}
 		Main.npm = require("npm");
-		console.log("Package: node-webpack");
 		await Main.installDependencies();
 		await new Promise((resolve, reject) => {
 			Main.npm.link("npm", (err: any) => {
@@ -75,7 +194,9 @@ export default class Main {
 		});
 	}
 	private static async installDependencies(where = "") {
-		console.log("Try to install assets");
+		if (Main.skipInstall) {
+			return;
+		}
 		await new Promise((resolve, reject) => {
 			Main.npm.load((err, result) => {
 				if (err) {
@@ -90,33 +211,16 @@ export default class Main {
 				if (err) {
 					return reject(err);
 				}
-				resolve({
-					result, result2, result3, result4,
-				});
+				resolve({result, result2, result3, result4});
 			});
 		});
 	}
-	private static async runWebpack(fronts: Front[]) {
+	private static async runWebpack(entries: IEntries) {
 		const webpack = require("webpack");
 		const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 		const CleanCSSPlugin = require("less-plugin-clean-css");
 		const precss = require("precss");
 		const autoprefixer = require("autoprefixer");
-		const entries: IEntries = {};
-		for (const front of fronts) {
-			const frontEntries = await front.getEntries();
-			if (frontEntries !== undefined) {
-				if (entries[frontEntries.name] === undefined) {
-					entries[frontEntries.name] = frontEntries.entries;
-				} else {
-					for (const entry of frontEntries.entries) {
-						if (entries[frontEntries.name].indexOf(entry) === -1) {
-							entries[frontEntries.name].push(entry);
-						}
-					}
-				}
-			}
-		}
 		const outputPath = path.resolve("..", "..", "storage", "public", "frontend", "dist");
 		let compiler: webpackTypes.Compiler;
 		try {
@@ -185,7 +289,7 @@ export default class Main {
 						},
 					],
 				},
-				mode: "development",
+				mode: Main.mode,
 				plugins: [
 					new MiniCssExtractPlugin({
 						filename: "[name].css",
@@ -212,7 +316,7 @@ export default class Main {
 		new webpack.ProgressPlugin({
 			profile: false,
 		}).apply(compiler);
-		compiler.run(async (err, stats) => {
+		const compilerCallback = async (err, stats) => {
 			if (err) {
 				throw err;
 			}
@@ -244,7 +348,141 @@ export default class Main {
 				}
 			}
 			await promisify(fs.writeFile)(path.resolve("..", "result.json"), JSON.stringify(result, null, 2), "UTF8");
-		});
+		};
+		if (Main.watch) {
+			const watchOptions = {};
+			if (watchOptions.hasOwnProperty("stdin")) {
+				process.stdin.on("end", (_) => {
+					process.exit(); // eslint-disable-line
+				});
+				process.stdin.resume();
+			}
+			await compiler.watch(watchOptions, compilerCallback);
+			console.error("\nwebpack is watching the files…\n");
+		} else {
+			compiler.run((err, stats) => {
+				if ((compiler as any).close) {
+					(compiler as any).close((err2) => {
+						compilerCallback(err || err2, stats);
+					});
+				} else {
+					compilerCallback(err, stats);
+				}
+			});
+		}
+	}
+	private static async getEntries(fronts: Front[]): Promise<IEntries> {
+		const entries: IEntries = {};
+		for (const front of fronts) {
+			const frontEntries = await front.getEntries();
+			if (frontEntries !== undefined) {
+				if (entries[frontEntries.name] === undefined) {
+					entries[frontEntries.name] = frontEntries.entries;
+				} else {
+					for (const entry of frontEntries.entries) {
+						if (entries[frontEntries.name].indexOf(entry) === -1) {
+							entries[frontEntries.name].push(entry);
+						}
+					}
+				}
+			}
+		}
+		return entries;
+	}
+	private static async exportWebpackConfig(moudles: IModules, entries: IEntries) {
+		await promisify(fs.writeFile)(path.resolve("..", "jalno.json"), JSON.stringify({
+			mode: Main.mode,
+			entries: entries,
+			moudles: moudles,
+		}, null, 2), "UTF8");
+		const config = `const webpack = require("webpack");
+const path = require("path");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const CleanCSSPlugin = require("less-plugin-clean-css");
+const precss = require("precss");
+const autoprefixer = require("autoprefixer");
+const JalnoResolver = require("./dist/JalnoResolver").default;
+const jalno = require("./jalno.json");
+JalnoResolver.setModules(jalno.moudles);
+const outputPath = path.resolve("..", "storage", "public", "frontend", "dist");
+module.exports = {
+	entry: jalno.entries,
+	stats: {
+		all: false,
+		colors: false,
+		modules: false,
+	},
+	output: {
+		filename: "[name].js",
+		chunkFilename: "[name].js",
+		path: outputPath,
+	},
+	resolve: {
+		plugins: [new JalnoResolver("module", "resolve")],
+		extensions: [".ts", ".js", ".less", ".css", ".sass", ".scss"],
+	},
+	module: {
+		rules: [
+			{
+				test: /\.(sc|sa|c)ss$/,
+				use: [
+					MiniCssExtractPlugin.loader,
+					"css-loader",
+					{
+						loader: "postcss-loader",
+						options: {
+							plugins: () => {
+								return [precss, autoprefixer];
+							},
+						},
+					},
+					"sass-loader",
+				],
+			},
+			{
+				test: /\.(less)$/,
+				use: [
+					MiniCssExtractPlugin.loader,
+					"css-loader",
+					{
+						loader: "less-loader",
+					},
+				],
+			},
+			{ test: /\.json$/, loader: "json-loader" },
+			{ test: /\.png$/, loader: "file-loader" },
+			{ test: /\.jpg$/, loader: "file-loader" },
+			{ test: /\.gif$/, loader: "file-loader" },
+			{ test: /\.woff2?$/, loader: "file-loader" },
+			{ test: /\.eot$/, loader: "file-loader" },
+			{ test: /\.ttf$/, loader: "file-loader" },
+			{ test: /\.svg$/, loader: "file-loader" },
+			{
+				test: /\.tsx?$/,
+				loader: "ts-loader",
+				options: {
+					transpileOnly: true,
+					logLevel: "warn",
+					compilerOptions: {
+						sourceMap: false,
+					},
+				},
+			},
+		],
+	},
+	mode: jalno.mode,
+	plugins: [
+		new MiniCssExtractPlugin({
+			filename: "[name].css",
+		}),
+		new webpack.ProvidePlugin({
+			"$": "jquery",
+			"jQuery": "jquery",
+			"window.jQuery": "jquery",
+		}),
+	],
+};`;
+		await promisify(fs.writeFile)(path.resolve("..", "webpack.config.js"), config, "UTF8");
 	}
 }
 Main.run();

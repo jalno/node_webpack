@@ -22,6 +22,9 @@ interface INodeCache {
 	regex: string;
 	module: Module;
 }
+export interface IModules {
+	[key: string]: INodeCache[];
+}
 
 export default class JalnoResolver {
 	public static commonFiles = {};
@@ -76,13 +79,9 @@ export default class JalnoResolver {
 				}
 			}
 		}
-		for (const name in JalnoResolver.modules) {
-			if (JalnoResolver.modules[name] !== undefined) {
-				for (const item of JalnoResolver.modules[name]) {
-				// 	console.log(item);
-				}
-			}
-		}
+	}
+	public static setModules(modules: IModules) {
+		JalnoResolver.modules = modules;
 	}
 	public static IsCommonModule(module: any) {
 		const userRequest = module.userRequest;
@@ -107,11 +106,12 @@ export default class JalnoResolver {
 		}
 		return false;
 	}
+	public static getModules(): IModules {
+		return JalnoResolver.modules;
+	}
 	private static source;
 	private static target;
-	private static modules: {
-		[key: string]: INodeCache[],
-	} = {};
+	private static modules: IModules = {};
 	private static async lookingForPackage(name: string, basepath: string): Promise<Module> {
 		const p = `${basepath}/node_modules/${name}/package.json`;
 		if (

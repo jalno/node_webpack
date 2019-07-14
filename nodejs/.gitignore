@@ -1,1 +1,4 @@
 node_modules
+result.json
+jalno.json
+webpack.config.js

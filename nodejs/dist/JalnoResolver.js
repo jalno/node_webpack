@@ -58,12 +58,9 @@ class JalnoResolver {
                 }
             }
         }
-        for (const name in JalnoResolver.modules) {
-            if (JalnoResolver.modules[name] !== undefined) {
-                for (const item of JalnoResolver.modules[name]) {
-                }
-            }
-        }
+    }
+    static setModules(modules) {
+        JalnoResolver.modules = modules;
     }
     static IsCommonModule(module) {
         const userRequest = module.userRequest;
@@ -84,6 +81,9 @@ class JalnoResolver {
             return true;
         }
         return false;
+    }
+    static getModules() {
+        return JalnoResolver.modules;
     }
     static async lookingForPackage(name, basepath) {
         const p = `${basepath}/node_modules/${name}/package.json`;
