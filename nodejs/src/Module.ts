@@ -1,6 +1,9 @@
 import Front from "./Front";
 
 export default class Module {
+	public static unserialize(data) {
+		return new Module(data._name, data._version, data._main, data._regex, Front.unserialize(data._front));
+	}
 	public satisfieses = 0;
 	public constructor(
 		private _name: string,

@@ -3,6 +3,9 @@ import { promisify } from "util";
 import Front from "./Front";
 
 export default class Package {
+	public static unserialize(data) {
+		return new Package(data._dir, data._name);
+	}
 	private _path: string;
 	public constructor(private _dir: string, private _name: string) {
 		this._path = this._dir + "/" + this._name;

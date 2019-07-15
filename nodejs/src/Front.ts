@@ -17,6 +17,9 @@ export interface IEntries {
 }
 
 export default class Front {
+	public static unserialize(data) {
+		return new Front(Package.unserialize(data._package), data._name);
+	}
 	private _path: string;
 	private entriesTypes = ["css", "less", "scss", "sass", "js", "ts"];
 	public constructor(private _package: Package, private _name: string) {

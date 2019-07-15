@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const Front_1 = require("./Front");
 class Module {
     constructor(_name, _version, _main, _regex, _front) {
         this._name = _name;
@@ -8,6 +9,9 @@ class Module {
         this._regex = _regex;
         this._front = _front;
         this.satisfieses = 0;
+    }
+    static unserialize(data) {
+        return new Module(data._name, data._version, data._main, data._regex, Front_1.default.unserialize(data._front));
     }
     getPath() {
         return `${this._front.path}/node_modules/${this._name}`;

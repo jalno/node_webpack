@@ -9,6 +9,9 @@ class Package {
         this._name = _name;
         this._path = this._dir + "/" + this._name;
     }
+    static unserialize(data) {
+        return new Package(data._dir, data._name);
+    }
     async getFrontends() {
         const packagejson = this._path + "/" + "package.json";
         const data = await util_1.promisify(fs.readFile)(packagejson, "utf8");

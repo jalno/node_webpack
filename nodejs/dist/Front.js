@@ -4,12 +4,16 @@ const fs = require("fs");
 const path = require("path");
 const util_1 = require("util");
 const Module_1 = require("./Module");
+const Package_1 = require("./Package");
 class Front {
     constructor(_package, _name) {
         this._package = _package;
         this._name = _name;
         this.entriesTypes = ["css", "less", "scss", "sass", "js", "ts"];
         this._path = _package.path + "/" + _name;
+    }
+    static unserialize(data) {
+        return new Front(Package_1.default.unserialize(data._package), data._name);
     }
     async initDependencies() {
         const theme = await this.getTheme();

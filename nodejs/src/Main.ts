@@ -30,7 +30,7 @@ export default class Main {
 					case "--write-webpack-config":
 					case "--wwc":
 						Main.writeWebpackConfig = true;
-						console.log("run webpack on watch mode");
+						console.log("write webpack config");
 						break;
 					case "--skip-install":
 					case "--webpack":
@@ -80,9 +80,18 @@ export default class Main {
 			Main.runWebpack(entries);
 		}
 		if (Main.writeWebpackConfig) {
-			const moudles = Main.JalnoResolver.getModules();
-			Main.exportWebpackConfig(moudles, entries);
+			const modules = Main.JalnoResolver.getModules();
+			Main.exportWebpackConfig(fronts, modules, entries);
 		}
+	}
+	public static async updateJalnoMoudles(modules: IModules) {
+		const jalnoPath = path.resolve(__dirname, "..", "jalno.json");
+		if (! await promisify(fs.exists)(jalnoPath)) {
+			return;
+		}
+		const jalno = JSON.parse(await promisify(fs.readFile)(jalnoPath, "UTF8"));
+		jalno.modules = modules;
+		await promisify(fs.writeFile)(path.resolve("..", "jalno.json"), JSON.stringify(jalno, null, 2), "UTF8");
 	}
 	private static npm: any;
 	private static JalnoResolver: any;
@@ -231,9 +240,23 @@ Options:
 					colors: false,
 					modules: false,
 				},
+				devtool: false,
+				optimization: {
+					splitChunks: {
+						cacheGroups: {
+							common: {
+								name: "common",
+								filename: "common.js",
+								test(module, chunks) {
+									return Main.JalnoResolver.isCommonModule(module);
+								},
+							},
+						},
+					},
+				},
 				output: {
 					filename: "[name].js",
-					chunkFilename: "[name].js",
+					chunkFilename: "common.js",
 					path: outputPath,
 				},
 				resolve: {
@@ -265,6 +288,9 @@ Options:
 								"css-loader",
 								{
 									loader: "less-loader",
+									options: {
+										minimize: false,
+									},
 								},
 							],
 						},
@@ -349,6 +375,7 @@ Options:
 			}
 			await promisify(fs.writeFile)(path.resolve("..", "result.json"), JSON.stringify(result, null, 2), "UTF8");
 		};
+		(compiler as any).devtool = false;
 		if (Main.watch) {
 			const watchOptions = {};
 			if (watchOptions.hasOwnProperty("stdin")) {
@@ -389,11 +416,12 @@ Options:
 		}
 		return entries;
 	}
-	private static async exportWebpackConfig(moudles: IModules, entries: IEntries) {
+	private static async exportWebpackConfig(fronts: Front[], modules: IModules, entries: IEntries) {
 		await promisify(fs.writeFile)(path.resolve("..", "jalno.json"), JSON.stringify({
 			mode: Main.mode,
+			fronts: fronts,
 			entries: entries,
-			moudles: moudles,
+			modules: modules,
 		}, null, 2), "UTF8");
 		const config = `const webpack = require("webpack");
 const path = require("path");
@@ -402,8 +430,28 @@ const CleanCSSPlugin = require("less-plugin-clean-css");
 const precss = require("precss");
 const autoprefixer = require("autoprefixer");
 const JalnoResolver = require("./dist/JalnoResolver").default;
+const Front = require("./dist/Front").default;
+const Module = require("./dist/Module").default;
 const jalno = require("./jalno.json");
-JalnoResolver.setModules(jalno.moudles);
+const modules = {};
+for (const packageName in jalno.modules) {
+	if (jalno.modules[packageName] !== undefined) {
+		for (const regex in jalno.modules[packageName]) {
+			if (jalno.modules[packageName][regex] !== undefined) {
+				if (modules[packageName] === undefined) {
+					modules[packageName] = {};
+				}
+				modules[packageName][regex] = Module.unserialize(jalno.modules[packageName][regex]);
+			}
+		}
+	}
+}
+JalnoResolver.setModules(modules);
+const fronts = [];
+for (const front of jalno.fronts) {
+	fronts.push(Front.unserialize(front));
+}
+JalnoResolver.setFronts(fronts);
 const outputPath = path.resolve("..", "storage", "public", "frontend", "dist");
 module.exports = {
 	entry: jalno.entries,
@@ -411,6 +459,20 @@ module.exports = {
 		all: false,
 		colors: false,
 		modules: false,
+	},
+	devtool: false,
+	optimization: {
+		splitChunks: {
+			cacheGroups: {
+				common: {
+					name: "common",
+					filename: "common.js",
+					test(module, chunks) {
+						return JalnoResolver.isCommonModule(module);
+					},
+				},
+			},
+		},
 	},
 	output: {
 		filename: "[name].js",
@@ -424,7 +486,24 @@ module.exports = {
 	module: {
 		rules: [
 			{
-				test: /\.(sc|sa|c)ss$/,
+				test: /\.css$/,
+				use: [
+					MiniCssExtractPlugin.loader,
+					"style-loader",
+					"css-loader",
+				],
+			},
+			{
+				test: /\.less$/,
+				use: [
+					MiniCssExtractPlugin.loader,
+					"style-loader",
+					"css-loader",
+					"less-loader"
+				],
+			},
+			{
+				test: /\.(scss)$/,
 				use: [
 					MiniCssExtractPlugin.loader,
 					"css-loader",
@@ -437,16 +516,6 @@ module.exports = {
 						},
 					},
 					"sass-loader",
-				],
-			},
-			{
-				test: /\.(less)$/,
-				use: [
-					MiniCssExtractPlugin.loader,
-					"css-loader",
-					{
-						loader: "less-loader",
-					},
 				],
 			},
 			{ test: /\.json$/, loader: "json-loader" },
