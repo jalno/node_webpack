@@ -446,7 +446,7 @@ Options:
 		const config = `const webpack = require("webpack");
 const path = require("path");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
-const CleanCSSPlugin = require("less-plugin-clean-css");
+const OptimizeCSSAssetsPlugin = require("optimize-css-assets-webpack-plugin");
 const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 const precss = require("precss");
 const autoprefixer = require("autoprefixer");
@@ -492,6 +492,7 @@ module.exports = {
 					  },
 				},
 			}),
+			new OptimizeCSSAssetsPlugin({}),
 		],
 		splitChunks: {
 			cacheGroups: {
