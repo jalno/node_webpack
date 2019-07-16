@@ -1,10 +1,11 @@
 import * as child_process from "child_process";
+import * as crypto from "crypto";
 import * as fs from "fs";
 import * as path from "path";
 import { promisify } from "util";
 import * as webpackTypes from "webpack";
 import Front from "./Front";
-import JalnoResolver, { IModules } from "./JalnoResolver";
+import { IModules } from "./JalnoResolver";
 import Package from "./Package";
 
 export interface IEntries {
@@ -72,7 +73,7 @@ export default class Main {
 		}
 		let entries: IEntries = {};
 		if (! Main.skipWebpack || Main.writeWebpackConfig) {
-			Main.JalnoResolver = require("./JalnoResolver").default as JalnoResolver;
+			Main.JalnoResolver = require("./JalnoResolver").default;
 			await Main.JalnoResolver.initSources(fronts);
 			entries = await Main.getEntries(fronts);
 		}
@@ -228,6 +229,7 @@ Options:
 		const webpack = require("webpack");
 		const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 		const CleanCSSPlugin = require("less-plugin-clean-css");
+		const UglifyJsPlugin = require("uglifyjs-webpack-plugin");
 		const precss = require("precss");
 		const autoprefixer = require("autoprefixer");
 		const outputPath = path.resolve("..", "..", "storage", "public", "frontend", "dist");
@@ -242,6 +244,16 @@ Options:
 				},
 				devtool: false,
 				optimization: {
+					minimizer: [
+						new UglifyJsPlugin({
+							uglifyOptions: {
+								minimize: false,
+								  output: {
+									comments: false,
+								  },
+							},
+						}),
+					],
 					splitChunks: {
 						cacheGroups: {
 							common: {
@@ -266,7 +278,22 @@ Options:
 				module: {
 					rules: [
 						{
-							test: /\.(sc|sa|c)ss$/,
+							test: /\.css$/,
+							use: [
+								MiniCssExtractPlugin.loader,
+								"css-loader",
+							],
+						},
+						{
+							test: /\.less$/,
+							use: [
+								MiniCssExtractPlugin.loader,
+								"css-loader",
+								"less-loader",
+							],
+						},
+						{
+							test: /\.(scss)$/,
 							use: [
 								MiniCssExtractPlugin.loader,
 								"css-loader",
@@ -279,19 +306,6 @@ Options:
 									},
 								},
 								"sass-loader",
-							],
-						},
-						{
-							test: /\.(less)$/,
-							use: [
-								MiniCssExtractPlugin.loader,
-								"css-loader",
-								{
-									loader: "less-loader",
-									options: {
-										minimize: false,
-									},
-								},
 							],
 						},
 						{ test: /\.json$/, loader: "json-loader" },
@@ -362,14 +376,20 @@ Options:
 				outputedFiles: {},
 			};
 			const exists = promisify(fs.exists);
+			const md5File = promisify(require("md5-file"));
 			for (const chunk of stats.compilation.chunks) {
 				for (const file of chunk.files) {
 					const filePath = path.resolve(outputPath, file);
-					if (result.outputedFiles[chunk.id] === undefined) {
-						result.outputedFiles[chunk.id] = [];
-					}
 					if (await exists(filePath)) {
-						result.outputedFiles[chunk.id].push(filePath.substr(offset));
+						const hash = crypto.createHmac("sha256", await md5File(filePath))
+									.digest("hex");
+						if (result.outputedFiles[chunk.name] === undefined) {
+							result.outputedFiles[chunk.name] = [];
+						}
+						result.outputedFiles[chunk.name].push({
+							name: filePath.substr(offset),
+							hash: hash,
+						});
 					}
 				}
 			}
@@ -427,6 +447,7 @@ Options:
 const path = require("path");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CleanCSSPlugin = require("less-plugin-clean-css");
+const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 const precss = require("precss");
 const autoprefixer = require("autoprefixer");
 const JalnoResolver = require("./dist/JalnoResolver").default;
@@ -462,6 +483,16 @@ module.exports = {
 	},
 	devtool: false,
 	optimization: {
+		minimizer: [
+			new UglifyJsPlugin({
+				uglifyOptions: {
+					minimize: false,
+					  output: {
+						comments: false,
+					  },
+				},
+			}),
+		],
 		splitChunks: {
 			cacheGroups: {
 				common: {
@@ -486,24 +517,22 @@ module.exports = {
 	module: {
 		rules: [
 			{
-				test: /\.css$/,
+				test: /\\.css$/,
 				use: [
 					MiniCssExtractPlugin.loader,
-					"style-loader",
 					"css-loader",
 				],
 			},
 			{
-				test: /\.less$/,
+				test: /\\.less$/,
 				use: [
 					MiniCssExtractPlugin.loader,
-					"style-loader",
 					"css-loader",
 					"less-loader"
 				],
 			},
 			{
-				test: /\.(scss)$/,
+				test: /\\.(scss)$/,
 				use: [
 					MiniCssExtractPlugin.loader,
 					"css-loader",
@@ -518,16 +547,16 @@ module.exports = {
 					"sass-loader",
 				],
 			},
-			{ test: /\.json$/, loader: "json-loader" },
-			{ test: /\.png$/, loader: "file-loader" },
-			{ test: /\.jpg$/, loader: "file-loader" },
-			{ test: /\.gif$/, loader: "file-loader" },
-			{ test: /\.woff2?$/, loader: "file-loader" },
-			{ test: /\.eot$/, loader: "file-loader" },
-			{ test: /\.ttf$/, loader: "file-loader" },
-			{ test: /\.svg$/, loader: "file-loader" },
+			{ test: /\\.json$/, loader: "json-loader" },
+			{ test: /\\.png$/, loader: "file-loader" },
+			{ test: /\\.jpg$/, loader: "file-loader" },
+			{ test: /\\.gif$/, loader: "file-loader" },
+			{ test: /\\.woff2?$/, loader: "file-loader" },
+			{ test: /\\.eot$/, loader: "file-loader" },
+			{ test: /\\.ttf$/, loader: "file-loader" },
+			{ test: /\\.svg$/, loader: "file-loader" },
 			{
-				test: /\.tsx?$/,
+				test: /\\.tsx?$/,
 				loader: "ts-loader",
 				options: {
 					transpileOnly: true,
@@ -554,4 +583,3 @@ module.exports = {
 		await promisify(fs.writeFile)(path.resolve("..", "webpack.config.js"), config, "UTF8");
 	}
 }
-Main.run();

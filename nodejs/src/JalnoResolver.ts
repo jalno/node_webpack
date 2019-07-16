@@ -277,8 +277,8 @@ export default class JalnoResolver {
 							return callback(err);
 						}
 						callback(null, newModule);
-					}); */
-					resolver.doResolve(target, newModule, null, resolveContext, callback)
+					});*/
+					resolver.doResolve(target, newModule, null, resolveContext, callback);
 				} else {
 					callback();
 				}

@@ -11,13 +11,13 @@ class Base {
 		foreach ($this->checkAssetsForWebpack($sources) as $asset) {
 			if ($asset["type"] == "css") {
 				if (isset($asset["file"])) {
-					$view->addCSSFile($asset["file"], isset($asset["name"]) ? $asset["name"] : "");
+					$view->addCSSFile($asset["file"] . "?{$asset['hash']}", isset($asset["name"]) ? $asset["name"] : "");
 				} else if (isset($asset["inline"])) {
 					$view->addCSS($asset["inline"], isset($asset["name"]) ? $asset["name"] : "");
 				}
 			} else if ($asset["type"] == "js") {
 				if (isset($asset["file"])) {
-					$view->addJSFile($asset["file"], isset($asset["name"]) ? $asset["name"] : "");
+					$view->addJSFile($asset["file"] . "?{$asset['hash']}", isset($asset["name"]) ? $asset["name"] : "");
 				} else if (isset($asset["inline"])) {
 					$view->addJS($asset["inline"], isset($asset["name"]) ? $asset["name"] : "");
 				}
@@ -52,12 +52,13 @@ class Base {
 			}
 
 			if (isset($result["outputedFiles"][$name])) {
-				foreach ($result["outputedFiles"][$name] as $file) {
-					$file = new file\local($file);
+				foreach ($result["outputedFiles"][$name] as $item) {
+					$file = new file\local($item["name"]);
 					if (! in_array($file->getPath(), $filteredFiles)) {
 						$filteredAssets[] = array(
 							"type" => $file->getExtension(),
-							"file" => "/".$file->getPath()
+							"file" => "/".$file->getPath(),
+							"hash" => $item["hash"],
 						);
 						$filteredFiles[] = $file->getPath();
 					}
