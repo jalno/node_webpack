@@ -424,13 +424,11 @@ Options:
             const frontEntries = await front.getEntries();
             if (frontEntries !== undefined) {
                 if (entries[frontEntries.name] === undefined) {
-                    entries[frontEntries.name] = frontEntries.entries;
+                    entries[frontEntries.name] = [];
                 }
-                else {
-                    for (const entry of frontEntries.entries) {
-                        if (entries[frontEntries.name].indexOf(entry) === -1) {
-                            entries[frontEntries.name].push(entry);
-                        }
+                for (const entry of frontEntries.entries) {
+                    if (entries[frontEntries.name].indexOf(entry) === -1) {
+                        entries[frontEntries.name].push(entry);
                     }
                 }
             }
