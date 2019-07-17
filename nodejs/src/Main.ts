@@ -347,7 +347,6 @@ Options:
 				console.error(`\u001b[1m\u001b[31m${err.message}\u001b[39m\u001b[22m`);
 				process.exit(1);
 			}
-
 			throw err;
 		}
 
@@ -383,37 +382,38 @@ Options:
 				handledFiles: entries,
 				outputedFiles: {},
 			};
+			const promises = [];
 			for (const chunk of stats.compilation.chunks) {
 				for (const file of chunk.files) {
 					const filePath = path.resolve(outputPath, file);
-					if (await exists(filePath)) {
-						const fd = await open(filePath, "r");
-						let continueRead = true;
-						const hash = crypto.createHash("sha256");
-						const buffer = new Uint8Array(1024);
-						while (continueRead) {
-							const response: IReadResponse = await read(fd, buffer, 0, buffer.byteLength, null);
-							if (response.bytesRead < buffer.byteLength) {
-								continueRead = false;
-							}
-							hash.update(response.bytesRead < buffer.byteLength ? buffer.slice(0, response.bytesRead) : buffer);
-						}
-						if (result.outputedFiles[chunk.name] === undefined) {
-							result.outputedFiles[chunk.name] = [];
-						}
-						result.outputedFiles[chunk.name].push({
-							name: filePath.substr(offset),
-							hash: hash.digest("hex"),
-						});
-						fs.close(fd, (error) => {
-							if (error) {
-								console.error(`\u001b[1m\u001b[31m${error.message}\u001b[39m\u001b[22m`);
-								process.exit(1);
-							}
-						});
+					if (! await exists(filePath)) {
+						console.error(`\u001b[1m\u001b[31mOutput file '${file}' does not exists on '${filePath}'\u001b[39m\u001b[22m`);
+						process.exit(1);
 					}
+					const promise = new Promise((resolve, reject) => {
+						const hash = crypto.createHash("sha256");
+						const stream = fs.createReadStream(filePath, {
+							encoding: "UTF8",
+						});
+						stream.on("data", (buffer) => {
+							hash.update(buffer);
+						});
+						stream.on("end", () => {
+							if (result.outputedFiles[chunk.name] === undefined) {
+								result.outputedFiles[chunk.name] = [];
+							}
+							result.outputedFiles[chunk.name].push({
+								name: filePath.substr(offset),
+								hash: hash.digest("hex"),
+							});
+							resolve();
+						});
+						stream.on("error", reject);
+					});
+					promises.push(promise);
 				}
 			}
+			await Promise.all(promises);
 			await promisify(fs.writeFile)(path.resolve("..", "result.json"), JSON.stringify(result, null, 2), "UTF8");
 		};
 		(compiler as any).devtool = false;

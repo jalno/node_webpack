@@ -342,9 +342,11 @@ Options:
         const open = util_1.promisify(fs.open);
         const read = util_1.promisify(fs.read);
         const compilerCallback = async (err, stats) => {
+            console.log("err", err);
             if (err || stats.hasErrors()) {
                 throw err;
             }
+            console.log("err2", err);
             const basePath = path.resolve("..", "..", "..", "..");
             const offset = (basePath + "/").length;
             for (const name in entries) {
@@ -356,13 +358,16 @@ Options:
                     }
                 }
             }
+            console.log("err3", err);
             const result = {
                 handledFiles: entries,
                 outputedFiles: {},
             };
             for (const chunk of stats.compilation.chunks) {
+                console.log("chunk.files", chunk.files);
                 for (const file of chunk.files) {
                     const filePath = path.resolve(outputPath, file);
+                    console.log("filePath", filePath);
                     if (await exists(filePath)) {
                         const fd = await open(filePath, "r");
                         let continueRead = true;
@@ -389,9 +394,13 @@ Options:
                             }
                         });
                     }
+                    console.log("filePath2", filePath);
                 }
             }
-            await util_1.promisify(fs.writeFile)(path.resolve("..", "result.json"), JSON.stringify(result, null, 2), "UTF8");
+            console.log("err4", err);
+            util_1.promisify(fs.writeFile)(path.resolve("..", "result.json"), JSON.stringify(result, null, 2), "UTF8");
+            console.log("err5", err);
+        //    process.exit(0);
         };
         compiler.devtool = false;
         if (Main.watch) {
