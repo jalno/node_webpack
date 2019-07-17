@@ -357,31 +357,34 @@ Options:
 			profile: false,
 		}).apply(compiler);
 		const exists = promisify(fs.exists);
-		const open = promisify(fs.open);
-		const read = promisify(fs.read);
-		interface IReadResponse {
-			bytesRead: number;
-			buffer: Uint8Array;
-		}
-		const compilerCallback = async (err, stats) => {
-			if (err || stats.hasErrors()) {
-				throw err;
-			}
-			const basePath = path.resolve("..", "..", "..", "..");
-			const offset = (basePath + "/").length;
-			for (const name in entries) {
-				if (entries[name] !== undefined) {
-					for (const key in entries[name]) {
-						if (entries[name][key] !== undefined) {
-							entries[name][key] = entries[name][key].substr(offset);
-						}
+		const read = promisify(fs.readFile);
+		const resultpath = path.resolve("..", "result.json");
+		const basePath = path.resolve("..", "..", "..", "..");
+		const offset = (basePath + "/").length;
+		const resultEntries: IEntries = {};
+		for (const name in entries) {
+			if (entries[name] !== undefined) {
+				for (const entry of entries[name]) {
+					if (resultEntries[name] === undefined) {
+						resultEntries[name] = [];
 					}
+					resultEntries[name].push(entry.substr(offset));
 				}
 			}
-			const result = {
-				handledFiles: entries,
-				outputedFiles: {},
-			};
+		}
+		const compilerCallback = async (err, stats) => {
+			if (err) {
+				throw err;
+			}
+			let result: any = {};
+			if (await exists(resultpath)) {
+				result = JSON.parse(await read(resultpath, "UTF8"));
+			} else {
+				result = {
+					outputedFiles: {},
+				};
+			}
+			result.handledFiles = resultEntries;
 			const promises = [];
 			for (const chunk of stats.compilation.chunks) {
 				for (const file of chunk.files) {
@@ -402,10 +405,21 @@ Options:
 							if (result.outputedFiles[chunk.name] === undefined) {
 								result.outputedFiles[chunk.name] = [];
 							}
-							result.outputedFiles[chunk.name].push({
-								name: filePath.substr(offset),
-								hash: hash.digest("hex"),
-							});
+							const relativePath = filePath.substr(offset);
+							let found = false;
+							for (const item of result.outputedFiles[chunk.name]) {
+								if (item.name === relativePath) {
+									item.hash = hash.digest("hex");
+									found = true;
+									break;
+								}
+							}
+							if (! found) {
+								result.outputedFiles[chunk.name].push({
+									name: relativePath,
+									hash: hash.digest("hex"),
+								});
+							}
 							resolve();
 						});
 						stream.on("error", reject);
@@ -418,15 +432,7 @@ Options:
 		};
 		(compiler as any).devtool = false;
 		if (Main.watch) {
-			const watchOptions = {};
-			if (watchOptions.hasOwnProperty("stdin")) {
-				process.stdin.on("end", (_) => {
-					process.exit(); // eslint-disable-line
-				});
-				process.stdin.resume();
-			}
-			await compiler.watch(watchOptions, compilerCallback);
-			console.error("\nwebpack is watching the files…\n");
+			compiler.watch(true as any, compilerCallback);
 		} else {
 			compiler.run((err, stats) => {
 				if ((compiler as any).close) {
