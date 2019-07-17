@@ -100,12 +100,12 @@ class JalnoResolver {
         let packageManager = realPackageManager;
         if (JalnoResolver.modules[name] !== undefined) {
             let modulePackageRegex;
-            if (packageManager && packageManager.hasOwnProperty("dependencies")) {
-                if (packageManager.dependencies[name] !== undefined) {
+            if (packageManager) {
+                if (packageManager.hasOwnProperty("dependencies") && packageManager.dependencies[name] !== undefined) {
                     modulePackageRegex = packageManager.dependencies[name];
                 }
             }
-            if (!modulePackageRegex) {
+            else {
                 packageManager = await JalnoResolver.getPackage(path_1.resolve(front.path, "package.json"));
                 if (packageManager && packageManager.hasOwnProperty("dependencies")) {
                     if (packageManager.dependencies[name] !== undefined) {
@@ -130,17 +130,10 @@ class JalnoResolver {
                 }
             }
             else {
-                packageManager = await JalnoResolver.getPackage(path_1.resolve(front.path, "node_modules", name, "package.json"));
                 for (const regex in JalnoResolver.modules[name]) {
                     if (JalnoResolver.modules[name] !== undefined) {
                         const module = JalnoResolver.modules[name][regex];
-                        if (packageManager && packageManager.version) {
-                            const satisfies = semver.satisfies(packageManager.version, regex);
-                            if (satisfies) {
-                                return module;
-                            }
-                        }
-                        else if (selectedPackage === undefined || semver.gt(module.version, selectedPackage.version)) {
+                        if (selectedPackage === undefined || module.satisfieses > selectedPackage.satisfieses) {
                             selectedPackage = module;
                         }
                     }
