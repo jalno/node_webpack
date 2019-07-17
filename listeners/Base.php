@@ -11,13 +11,13 @@ class Base {
 		foreach ($this->checkAssetsForWebpack($sources) as $asset) {
 			if ($asset["type"] == "css") {
 				if (isset($asset["file"])) {
-					$view->addCSSFile($asset["file"] . "?{$asset['hash']}", isset($asset["name"]) ? $asset["name"] : "");
+					$view->addCSSFile($asset["file"] . ((isset($asset["hash"]) and $asset["hash"]) ? "?{$asset['hash']}" : ""), isset($asset["name"]) ? $asset["name"] : "");
 				} else if (isset($asset["inline"])) {
 					$view->addCSS($asset["inline"], isset($asset["name"]) ? $asset["name"] : "");
 				}
 			} else if ($asset["type"] == "js") {
 				if (isset($asset["file"])) {
-					$view->addJSFile($asset["file"] . "?{$asset['hash']}", isset($asset["name"]) ? $asset["name"] : "");
+					$view->addJSFile($asset["file"] . ((isset($asset["hash"]) and $asset["hash"]) ? "?{$asset['hash']}" : ""), isset($asset["name"]) ? $asset["name"] : "");
 				} else if (isset($asset["inline"])) {
 					$view->addJS($asset["inline"], isset($asset["name"]) ? $asset["name"] : "");
 				}
@@ -58,7 +58,7 @@ class Base {
 						$filteredAssets[] = array(
 							"type" => $file->getExtension(),
 							"file" => "/".$file->getPath(),
-							"hash" => $item["hash"],
+							"hash" => $item["hash"] ?? "",
 						);
 						$filteredFiles[] = $file->getPath();
 					}

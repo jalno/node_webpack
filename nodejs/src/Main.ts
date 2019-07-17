@@ -393,41 +393,58 @@ Options:
 						console.error(`\u001b[1m\u001b[31mOutput file '${file}' does not exists on '${filePath}'\u001b[39m\u001b[22m`);
 						process.exit(1);
 					}
-					const promise = new Promise((resolve, reject) => {
-						const hash = crypto.createHash("sha256");
-						const stream = fs.createReadStream(filePath, {
-							encoding: "UTF8",
-						});
-						stream.on("data", (buffer) => {
-							hash.update(buffer);
-						});
-						stream.on("end", () => {
-							if (result.outputedFiles[chunk.name] === undefined) {
-								result.outputedFiles[chunk.name] = [];
-							}
-							const relativePath = filePath.substr(offset);
-							let found = false;
-							for (const item of result.outputedFiles[chunk.name]) {
-								if (item.name === relativePath) {
-									item.hash = hash.digest("hex");
-									found = true;
-									break;
+					const relativePath = filePath.substr(offset);
+					if (result.outputedFiles[chunk.name] === undefined) {
+						result.outputedFiles[chunk.name] = [];
+					}
+					if (Main.mode === "production") {
+						const promise = new Promise((resolve, reject) => {
+							const hash = crypto.createHash("sha256");
+							const stream = fs.createReadStream(filePath, {
+								encoding: "UTF8",
+							});
+							stream.on("data", (buffer) => {
+								hash.update(buffer);
+							});
+							stream.on("end", () => {
+								let found = false;
+								for (const item of result.outputedFiles[chunk.name]) {
+									if (item.name === relativePath) {
+										item.hash = hash.digest("hex");
+										found = true;
+										break;
+									}
 								}
-							}
-							if (! found) {
-								result.outputedFiles[chunk.name].push({
-									name: relativePath,
-									hash: hash.digest("hex"),
-								});
-							}
-							resolve();
+								if (! found) {
+									result.outputedFiles[chunk.name].push({
+										name: relativePath,
+										hash: hash.digest("hex"),
+									});
+								}
+								resolve();
+							});
+							stream.on("error", reject);
 						});
-						stream.on("error", reject);
-					});
-					promises.push(promise);
+						promises.push(promise);
+					} else {
+						let found = false;
+						for (const item of result.outputedFiles[chunk.name]) {
+							if (item.name === relativePath) {
+								found = true;
+								break;
+							}
+						}
+						if (! found) {
+							result.outputedFiles[chunk.name].push({
+								name: relativePath,
+							});
+						}
+					}
 				}
 			}
-			await Promise.all(promises);
+			if (promises.length) {
+				await Promise.all(promises);
+			}
 			await promisify(fs.writeFile)(path.resolve("..", "result.json"), JSON.stringify(result, null, 2), "UTF8");
 		};
 		(compiler as any).devtool = false;
