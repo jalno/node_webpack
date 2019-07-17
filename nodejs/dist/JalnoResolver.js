@@ -148,7 +148,7 @@ class JalnoResolver {
                 return selectedPackage;
             }
         }
-        if (realPackageManager && realPackageManager.dependencies[name] !== undefined) {
+        if (realPackageManager && realPackageManager.hasOwnProperty("dependencies") && realPackageManager.dependencies[name] !== undefined) {
             let newPackageManager;
             let dir = realpath;
             while (dir !== "/") {

@@ -228,7 +228,7 @@ Options:
 	private static async runWebpack(entries: IEntries) {
 		const webpack = require("webpack");
 		const MiniCssExtractPlugin = require("mini-css-extract-plugin");
-		const CleanCSSPlugin = require("less-plugin-clean-css");
+		const OptimizeCSSAssetsPlugin = require("optimize-css-assets-webpack-plugin");
 		const UglifyJsPlugin = require("uglifyjs-webpack-plugin");
 		const precss = require("precss");
 		const autoprefixer = require("autoprefixer");
@@ -253,6 +253,7 @@ Options:
 								  },
 							},
 						}),
+						new OptimizeCSSAssetsPlugin({}),
 					],
 					splitChunks: {
 						cacheGroups: {
@@ -356,8 +357,15 @@ Options:
 		new webpack.ProgressPlugin({
 			profile: false,
 		}).apply(compiler);
+		const exists = promisify(fs.exists);
+		const open = promisify(fs.open);
+		const read = promisify(fs.read);
+		interface IReadResponse {
+			bytesRead: number;
+			buffer: Uint8Array;
+		}
 		const compilerCallback = async (err, stats) => {
-			if (err) {
+			if (err || stats.hasErrors()) {
 				throw err;
 			}
 			const basePath = path.resolve("..", "..", "..", "..");
@@ -375,20 +383,33 @@ Options:
 				handledFiles: entries,
 				outputedFiles: {},
 			};
-			const exists = promisify(fs.exists);
-			const md5File = promisify(require("md5-file"));
 			for (const chunk of stats.compilation.chunks) {
 				for (const file of chunk.files) {
 					const filePath = path.resolve(outputPath, file);
 					if (await exists(filePath)) {
-						const hash = crypto.createHmac("sha256", await md5File(filePath))
-									.digest("hex");
+						const fd = await open(filePath, "r");
+						let continueRead = true;
+						const hash = crypto.createHash("sha256");
+						const buffer = new Uint8Array(1024);
+						while (continueRead) {
+							const response: IReadResponse = await read(fd, buffer, 0, buffer.byteLength, null);
+							if (response.bytesRead < buffer.byteLength) {
+								continueRead = false;
+							}
+							hash.update(response.bytesRead < buffer.byteLength ? buffer.slice(0, response.bytesRead) : buffer);
+						}
 						if (result.outputedFiles[chunk.name] === undefined) {
 							result.outputedFiles[chunk.name] = [];
 						}
 						result.outputedFiles[chunk.name].push({
 							name: filePath.substr(offset),
-							hash: hash,
+							hash: hash.digest("hex"),
+						});
+						fs.close(fd, (error) => {
+							if (error) {
+								console.error(`\u001b[1m\u001b[31m${error.message}\u001b[39m\u001b[22m`);
+								process.exit(1);
+							}
 						});
 					}
 				}
