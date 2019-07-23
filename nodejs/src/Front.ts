@@ -41,6 +41,11 @@ export default class Front {
 		let hasChange = false;
 		for (const asset of theme.assets as IAsset[]) {
 			if (asset.type === "package") {
+				if (asset.name.indexOf("@") !== -1) {
+					const packageDesc = asset.name.split("@", 2);
+					asset.name = packageDesc[0];
+					asset.version = packageDesc[1];
+				}
 				if (packages.dependencies[asset.name] === undefined) {
 					packages.dependencies[asset.name] = asset.version ? asset.version : "latest";
 					hasChange = true;
