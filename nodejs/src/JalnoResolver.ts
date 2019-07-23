@@ -3,7 +3,6 @@ import { dirname, resolve } from "path";
 import * as semver from "semver";
 import { promisify } from "util";
 import Front from "./Front";
-import Main from "./Main";
 import Module from "./Module";
 
 // tslint:disable-next-line:no-namespace
@@ -198,7 +197,6 @@ export default class JalnoResolver {
 				if (! moudle) {
 					JalnoResolver.modules[name][regex] = moudle = new Module(name, newPackageManager.version, main, regex, front);
 				}
-				await Main.updateJalnoMoudles(JalnoResolver.modules);
 				return moudle;
 			}
 		}

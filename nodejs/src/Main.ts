@@ -446,6 +446,9 @@ Options:
 				await Promise.all(promises);
 			}
 			await promisify(fs.writeFile)(path.resolve("..", "result.json"), JSON.stringify(result, null, 2), "UTF8");
+			if (Main.writeWebpackConfig) {
+				await Main.updateJalnoMoudles(Main.JalnoResolver.getModules());
+			}
 		};
 		(compiler as any).devtool = false;
 		if (Main.watch) {

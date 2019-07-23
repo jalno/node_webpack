@@ -4,7 +4,6 @@ const fs = require("fs");
 const path_1 = require("path");
 const semver = require("semver");
 const util_1 = require("util");
-const Main_1 = require("./Main");
 const Module_1 = require("./Module");
 class JalnoResolver {
     constructor(source, target) {
@@ -178,7 +177,6 @@ class JalnoResolver {
                 if (!moudle) {
                     JalnoResolver.modules[name][regex] = moudle = new Module_1.default(name, newPackageManager.version, main, regex, front);
                 }
-                await Main_1.default.updateJalnoMoudles(JalnoResolver.modules);
                 return moudle;
             }
         }
