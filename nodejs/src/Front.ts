@@ -100,7 +100,7 @@ export default class Front {
 		const entries = [];
 		if (theme.hasOwnProperty("assets")) {
 			for (const asset of theme.assets as IAsset[]) {
-				if (this.entriesTypes.indexOf(asset.type) > -1) {
+				if (this.entriesTypes.indexOf(asset.type) > -1 && asset.file !== undefined) {
 					entries.push(this._path + "/" + asset.file);
 				}
 			}
