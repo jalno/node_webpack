@@ -5,6 +5,7 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const util_1 = require("util");
+const LessLoaderHelper_1 = require("./LessLoaderHelper");
 const Package_1 = require("./Package");
 class Main {
     static async run() {
@@ -255,7 +256,10 @@ Options:
                     path: outputPath,
                 },
                 resolve: {
-                    plugins: [new Main.JalnoResolver("module", "resolve")],
+                    plugins: [
+                        new Main.JalnoResolver("module", "resolve"),
+                        new LessLoaderHelper_1.default("resolve", "resolve"),
+                    ],
                     extensions: [".ts", ".js", ".less", ".css", ".sass", ".scss"],
                 },
                 module: {
@@ -483,6 +487,7 @@ const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 const precss = require("precss");
 const autoprefixer = require("autoprefixer");
 const JalnoResolver = require("./dist/JalnoResolver").default;
+const LessLoaderHelper = require("./dist/LessLoaderHelper").default;
 const Front = require("./dist/Front").default;
 const Module = require("./dist/Module").default;
 const jalno = require("./jalno.json");
@@ -544,7 +549,10 @@ module.exports = {
 		path: outputPath,
 	},
 	resolve: {
-		plugins: [new JalnoResolver("module", "resolve")],
+		plugins: [
+			new JalnoResolver("module", "resolve"),
+			new LessLoaderHelper("resolve", "resolve"),
+		],
 		extensions: [".ts", ".js", ".less", ".css", ".sass", ".scss"],
 	},
 	module: {

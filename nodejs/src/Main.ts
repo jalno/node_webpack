@@ -6,6 +6,7 @@ import { promisify } from "util";
 import * as webpackTypes from "webpack";
 import Front from "./Front";
 import { IModules } from "./JalnoResolver";
+import LessLoaderHelper from "./LessLoaderHelper";
 import Package from "./Package";
 
 export interface IEntries {
@@ -273,7 +274,10 @@ Options:
 					path: outputPath,
 				},
 				resolve: {
-					plugins: [new Main.JalnoResolver("module", "resolve")],
+					plugins: [
+						new Main.JalnoResolver("module", "resolve"),
+						new LessLoaderHelper("resolve", "resolve"),
+					],
 					extensions: [".ts", ".js", ".less", ".css", ".sass", ".scss"],
 				},
 				module: {
@@ -497,6 +501,7 @@ const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 const precss = require("precss");
 const autoprefixer = require("autoprefixer");
 const JalnoResolver = require("./dist/JalnoResolver").default;
+const LessLoaderHelper = require("./dist/LessLoaderHelper").default;
 const Front = require("./dist/Front").default;
 const Module = require("./dist/Module").default;
 const jalno = require("./jalno.json");
@@ -558,7 +563,10 @@ module.exports = {
 		path: outputPath,
 	},
 	resolve: {
-		plugins: [new JalnoResolver("module", "resolve")],
+		plugins: [
+			new JalnoResolver("module", "resolve"),
+			new LessLoaderHelper("resolve", "resolve"),
+		],
 		extensions: [".ts", ".js", ".less", ".css", ".sass", ".scss"],
 	},
 	module: {
