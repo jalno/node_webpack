@@ -158,33 +158,16 @@ Options:
         if (Main.skipInstall) {
             return;
         }
-        if (!await util_1.promisify(fs.exists)(path.resolve("..", "node_modules", "npm"))) {
-            let npmBin;
-            try {
-                const out = await util_1.promisify(child_process.exec)("which npm");
-                npmBin = out.stdout.trimEnd();
-            }
-            catch (e) {
-                throw new Error("Cannot find npm on this envirement");
-            }
-            const execFile = await util_1.promisify(child_process.execFile);
-            try {
-                await execFile(npmBin, ["link", "npm"]);
-            }
-            catch (e) {
-                throw new Error("Cannot find npm in your global repository");
-            }
+        let npmBin = "";
+        try {
+            const out = await util_1.promisify(child_process.exec)("npm root -g");
+            npmBin = out.stdout.trimEnd() + "/npm";
         }
-        Main.npm = require("npm");
+        catch (e) {
+            throw new Error("Cannot find npm on this environment");
+        }
+        Main.npm = require(npmBin);
         await Main.installDependencies();
-        await new Promise((resolve, reject) => {
-            Main.npm.link("npm", (err) => {
-                if (err) {
-                    return reject(err);
-                }
-                resolve();
-            });
-        });
     }
     static async installDependencies(where = "") {
         if (Main.skipInstall) {
