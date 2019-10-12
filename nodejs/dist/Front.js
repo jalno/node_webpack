@@ -5,6 +5,7 @@ const path = require("path");
 const util_1 = require("util");
 const Module_1 = require("./Module");
 const Package_1 = require("./Package");
+const Language_1 = require("./Language");
 class Front {
     constructor(_package, _name) {
         this._package = _package;
@@ -128,6 +129,19 @@ class Front {
             await Promise.all(promises);
         }
         return util_1.promisify(fs.rmdir)(filePath);
+    }
+    async getLangs() {
+        const file = await this.getTheme();
+        if (!file.hasOwnProperty("languages")) {
+            return [];
+        }
+        const langs = [];
+        for (const code in file.languages) {
+            if (file.languages[code]) {
+                langs.push(new Language_1.default(code, path.join(this._path, file.languages[code])));
+            }
+        }
+        return langs;
     }
     get name() {
         return this._name;

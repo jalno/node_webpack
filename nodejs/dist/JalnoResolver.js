@@ -64,6 +64,9 @@ class JalnoResolver {
     static setFronts(fronts) {
         JalnoResolver.fronts = fronts;
     }
+    static setLangs(langs) {
+        JalnoResolver.langs = langs;
+    }
     static isCommonModule(module) {
         const userRequest = module.userRequest;
         if (typeof userRequest !== "string") {
@@ -255,4 +258,5 @@ class JalnoResolver {
 JalnoResolver.commonFiles = {};
 JalnoResolver.fronts = [];
 JalnoResolver.modules = {};
+JalnoResolver.langs = [];
 exports.default = JalnoResolver;

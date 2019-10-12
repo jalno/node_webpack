@@ -3,6 +3,7 @@ import * as path from "path";
 import { promisify } from "util";
 import Module from "./Module";
 import Package from "./Package";
+import Language from "./Language";
 
 export interface IAsset {
 	type: string;
@@ -144,6 +145,19 @@ export default class Front {
 			await Promise.all(promises);
 		}
 		return promisify(fs.rmdir)(filePath);
+	}
+	public async getLangs(): Promise<Language[]> {
+		const file = await this.getTheme();
+		if (! file.hasOwnProperty("languages")) {
+			return [];
+		}
+		const langs: Language[]  = [];
+		for (const code in file.languages) {
+			if (file.languages[code]) {
+				langs.push(new Language(code, path.join(this._path, file.languages[code])));
+			}
+		}
+		return langs;
 	}
 	public get name() {
 		return this._name;
