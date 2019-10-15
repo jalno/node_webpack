@@ -76,6 +76,13 @@ class Main {
             Main.JalnoResolver = require("./JalnoResolver").default;
             await Main.JalnoResolver.initSources(fronts);
             entries = await Main.getEntries(fronts);
+            if (Translator_1.default.langs.length) {
+                if (!entries.hasOwnProperty("common")) {
+                    entries.common = [];
+                }
+                await Translator_1.default.exportFile();
+                entries.common.push(Translator_1.default.filePath);
+            }
         }
         if (!Main.skipWebpack) {
             Main.runWebpack(entries);
@@ -285,7 +292,6 @@ Options:
                                 "sass-loader",
                             ],
                         },
-                        { test: /\.json$/, loader: "json-loader" },
                         { test: /\.png$/, loader: "file-loader" },
                         { test: /\.jpg$/, loader: "file-loader" },
                         { test: /\.gif$/, loader: "file-loader" },
@@ -463,19 +469,9 @@ Options:
         return entries;
     }
     static async exportWebpackConfig(fronts, modules, entries) {
-        const langs = [];
-        const packages = [];
-        for (const front of fronts) {
-            if (packages.indexOf(front.package.name) === -1) {
-                langs.push(...await front.package.getLangs());
-                packages.push(front.package.name);
-            }
-            langs.push(...await front.getLangs());
-        }
         await util_1.promisify(fs.writeFile)(path.resolve("..", "jalno.json"), JSON.stringify({
             mode: Main.mode,
             fronts: fronts,
-            langs: langs,
             entries: entries,
             modules: modules,
         }, null, 2), "UTF8");
@@ -489,7 +485,6 @@ const autoprefixer = require("autoprefixer");
 const JalnoResolver = require("./dist/JalnoResolver").default;
 const LessLoaderHelper = require("./dist/LessLoaderHelper").default;
 const Front = require("./dist/Front").default;
-const Language = require("./dist/Language").default;
 const Module = require("./dist/Module").default;
 const jalno = require("./jalno.json");
 const modules = {};
@@ -510,12 +505,7 @@ const fronts = [];
 for (const front of jalno.fronts) {
 	fronts.push(Front.unserialize(front));
 }
-const langs = [];
-for (const lang of jalno.langs) {
-	langs.push(Language.unserialize(lang));
-}
 JalnoResolver.setFronts(fronts);
-JalnoResolver.setLangs(langs);
 const outputPath = path.resolve("..", "storage", "public", "frontend", "dist");
 module.exports = {
 	entry: jalno.entries,

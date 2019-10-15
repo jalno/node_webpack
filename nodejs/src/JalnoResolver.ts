@@ -4,7 +4,6 @@ import * as semver from "semver";
 import { promisify } from "util";
 import Front from "./Front";
 import Module from "./Module";
-import Language from "./Language";
 
 // tslint:disable-next-line:no-namespace
 export namespace EnhancedResolve {
@@ -85,9 +84,6 @@ export default class JalnoResolver {
 	public static setFronts(fronts: Front[]) {
 		JalnoResolver.fronts = fronts;
 	}
-	public static setLangs(langs: Language[]) {
-		JalnoResolver.langs = langs;
-	}
 	public static isCommonModule(module: any) {
 		const userRequest = module.userRequest;
 		if (typeof userRequest !== "string") {
@@ -116,7 +112,6 @@ export default class JalnoResolver {
 	}
 	private static fronts: Front[] = [];
 	private static modules: IModules = {};
-	private static langs: Language[] = [];
 	private static async lookingForPackage(name: string, basepath: string, packagePath: string): Promise<Module> {
 		const realpath = packagePath;
 		const realPackageManager = await JalnoResolver.getPackage(packagePath);

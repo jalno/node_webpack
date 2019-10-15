@@ -1,9 +1,9 @@
 import * as fs from "fs";
 import * as path from "path";
 import { promisify } from "util";
+import Language from "./Language";
 import Module from "./Module";
 import Package from "./Package";
-import Language from "./Language";
 
 export interface IAsset {
 	type: string;

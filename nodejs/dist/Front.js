@@ -3,9 +3,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const fs = require("fs");
 const path = require("path");
 const util_1 = require("util");
+const Language_1 = require("./Language");
 const Module_1 = require("./Module");
 const Package_1 = require("./Package");
-const Language_1 = require("./Language");
 class Front {
     constructor(_package, _name) {
         this._package = _package;
