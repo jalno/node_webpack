@@ -321,6 +321,8 @@ Options:
                         "$": "jquery",
                         "jQuery": "jquery",
                         "window.jQuery": "jquery",
+                        "Translator": ["@jalno/translator", "default"],
+                        "t": ["@jalno/translator", "t"],
                     }),
                 ],
             });
@@ -613,6 +615,8 @@ module.exports = {
 			"$": "jquery",
 			"jQuery": "jquery",
 			"window.jQuery": "jquery",
+			"Translator": ["@jalno/translator", "default"],
+			"t": ["@jalno/translator", "t"],
 		}),
 	],
 };`;

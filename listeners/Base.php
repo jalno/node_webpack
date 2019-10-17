@@ -72,7 +72,7 @@ class Base {
 				}
 			}
 		}
-		return array_merge($filteredAssets, $commonAssets);
+		return array_merge($commonAssets, $filteredAssets);
 	}
 	private function getWebpackResult(): array {
 		$nodejs = new directory\local(packages::package("node_webpack")->getFilePath("nodejs"));
