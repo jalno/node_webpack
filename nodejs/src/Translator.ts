@@ -22,7 +22,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var Translator = (function () {
 	function Translator() {
 	}
-	Translator.init() = function () {`;
+	Translator.init = function () {
+		window.jalno = {
+			translator: {},
+		};`;
 		for (const code in langs) {
 			if (langs[code] !== undefined) {
 				TranslatorDotTs += `\n\t\twindow.jalno.translator["${code}"] = [];`;
@@ -32,9 +35,9 @@ var Translator = (function () {
 			}
 		}
 		TranslatorDotTs += `\n\t};
+	Translator.init();
 }());
-exports.default = Translator
-Translator.init();`;
+exports.default = Translator`;
 		const directory = path.dirname(Translator.filePath);
 		if (! await promisify(fs.exists)(directory)) {
 			await promisify(fs.mkdir)(directory, { recursive: true });
