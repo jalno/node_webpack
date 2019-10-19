@@ -7,6 +7,7 @@ const path = require("path");
 const util_1 = require("util");
 const LessLoaderHelper_1 = require("./LessLoaderHelper");
 const Package_1 = require("./Package");
+const Translator_1 = require("./Translator");
 class Main {
     static async run() {
         if (process.argv.length > 2) {
@@ -56,12 +57,18 @@ class Main {
         for (const p of packages) {
             const packageFronts = await p.getFrontends();
             fronts.push(...packageFronts);
+            for (const lang of await p.getLangs()) {
+                Translator_1.default.addLang(lang.code, lang.path);
+            }
             for (const front of packageFronts) {
                 if (Main.clean) {
                     await front.clean();
                 }
                 await front.initDependencies();
                 await Main.installDependencies(front.path);
+                for (const lang of await front.getLangs()) {
+                    Translator_1.default.addLang(lang.code, lang.path);
+                }
             }
         }
         let entries = {};
@@ -69,6 +76,13 @@ class Main {
             Main.JalnoResolver = require("./JalnoResolver").default;
             await Main.JalnoResolver.initSources(fronts);
             entries = await Main.getEntries(fronts);
+            if (Translator_1.default.langs.length) {
+                if (!entries.hasOwnProperty("common")) {
+                    entries.common = [];
+                }
+                await Translator_1.default.exportFile();
+                entries.common.push(Translator_1.default.filePath);
+            }
         }
         if (!Main.skipWebpack) {
             Main.runWebpack(entries);
@@ -278,7 +292,6 @@ Options:
                                 "sass-loader",
                             ],
                         },
-                        { test: /\.json$/, loader: "json-loader" },
                         { test: /\.png$/, loader: "file-loader" },
                         { test: /\.jpg$/, loader: "file-loader" },
                         { test: /\.gif$/, loader: "file-loader" },
@@ -308,6 +321,8 @@ Options:
                         "$": "jquery",
                         "jQuery": "jquery",
                         "window.jQuery": "jquery",
+                        "Translator": ["@jalno/translator", "default"],
+                        "t": ["@jalno/translator", "t"],
                     }),
                 ],
             });
@@ -571,7 +586,6 @@ module.exports = {
 					"sass-loader",
 				],
 			},
-			{ test: /\\.json$/, loader: "json-loader" },
 			{ test: /\\.png$/, loader: "file-loader" },
 			{ test: /\\.jpg$/, loader: "file-loader" },
 			{ test: /\\.gif$/, loader: "file-loader" },
@@ -601,6 +615,8 @@ module.exports = {
 			"$": "jquery",
 			"jQuery": "jquery",
 			"window.jQuery": "jquery",
+			"Translator": ["@jalno/translator", "default"],
+			"t": ["@jalno/translator", "t"],
 		}),
 	],
 };`;

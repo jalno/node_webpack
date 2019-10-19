@@ -6,8 +6,10 @@ import { promisify } from "util";
 import * as webpackTypes from "webpack";
 import Front from "./Front";
 import { IModules } from "./JalnoResolver";
+import Language from "./Language";
 import LessLoaderHelper from "./LessLoaderHelper";
 import Package from "./Package";
+import Translator from "./Translator";
 
 export interface IEntries {
 	[key: string]: string[];
@@ -64,12 +66,18 @@ export default class Main {
 		for (const p of packages) {
 			const packageFronts = await p.getFrontends();
 			fronts.push(...packageFronts);
+			for (const lang of await p.getLangs()) {
+				Translator.addLang(lang.code, lang.path);
+			}
 			for (const front of packageFronts) {
 				if (Main.clean) {
 					await front.clean();
 				}
 				await front.initDependencies();
 				await Main.installDependencies(front.path);
+				for (const lang of await front.getLangs()) {
+					Translator.addLang(lang.code, lang.path);
+				}
 			}
 		}
 		let entries: IEntries = {};
@@ -77,6 +85,13 @@ export default class Main {
 			Main.JalnoResolver = require("./JalnoResolver").default;
 			await Main.JalnoResolver.initSources(fronts);
 			entries = await Main.getEntries(fronts);
+			if (Translator.langs.length) {
+				if (!entries.hasOwnProperty("common")) {
+					entries.common = [];
+				}
+				await Translator.exportFile();
+				entries.common.push(Translator.filePath);
+			}
 		}
 		if (! Main.skipWebpack) {
 			Main.runWebpack(entries);
@@ -297,7 +312,6 @@ Options:
 								"sass-loader",
 							],
 						},
-						{ test: /\.json$/, loader: "json-loader" },
 						{ test: /\.png$/, loader: "file-loader" },
 						{ test: /\.jpg$/, loader: "file-loader" },
 						{ test: /\.gif$/, loader: "file-loader" },
@@ -327,6 +341,8 @@ Options:
 						"$": "jquery",
 						"jQuery": "jquery",
 						"window.jQuery": "jquery",
+						"Translator": ["@jalno/translator", "default"],
+						"t": ["@jalno/translator", "t"],
 					}),
 				],
 			});
@@ -586,7 +602,6 @@ module.exports = {
 					"sass-loader",
 				],
 			},
-			{ test: /\\.json$/, loader: "json-loader" },
 			{ test: /\\.png$/, loader: "file-loader" },
 			{ test: /\\.jpg$/, loader: "file-loader" },
 			{ test: /\\.gif$/, loader: "file-loader" },
@@ -616,6 +631,8 @@ module.exports = {
 			"$": "jquery",
 			"jQuery": "jquery",
 			"window.jQuery": "jquery",
+			"Translator": ["@jalno/translator", "default"],
+			"t": ["@jalno/translator", "t"],
 		}),
 	],
 };`;

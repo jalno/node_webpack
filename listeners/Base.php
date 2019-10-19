@@ -31,7 +31,7 @@ class Base {
 		$commonAssets = [];
 		if (isset($result["outputedFiles"]["common"])) {
 			foreach ($result["outputedFiles"]["common"] as $file) {
-				$file = new file\local($file);
+				$file = new file\local($file["name"]);
 				$commonAssets[] = array(
 					"type" => $file->getExtension(),
 					"file" => "/".$file->getPath()
@@ -45,12 +45,7 @@ class Base {
 			$assets = $source->getAssets();
 			if (isset($result["handledFiles"][$name])) {
 				$handledFiles = $result["handledFiles"][$name];
-				if ($commonAssets) {
-					$filteredAssets = array_merge($filteredAssets, $commonAssets);
-					$commonAssets = [];
-				}
 			}
-
 			if (isset($result["outputedFiles"][$name])) {
 				foreach ($result["outputedFiles"][$name] as $item) {
 					$file = new file\local($item["name"]);
@@ -77,7 +72,7 @@ class Base {
 				}
 			}
 		}
-		return $filteredAssets;
+		return array_merge($commonAssets, $filteredAssets);
 	}
 	private function getWebpackResult(): array {
 		$nodejs = new directory\local(packages::package("node_webpack")->getFilePath("nodejs"));

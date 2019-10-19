@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const fs = require("fs");
 const path = require("path");
 const util_1 = require("util");
+const Language_1 = require("./Language");
 const Module_1 = require("./Module");
 const Package_1 = require("./Package");
 class Front {
@@ -128,6 +129,19 @@ class Front {
             await Promise.all(promises);
         }
         return util_1.promisify(fs.rmdir)(filePath);
+    }
+    async getLangs() {
+        const file = await this.getTheme();
+        if (!file.hasOwnProperty("languages")) {
+            return [];
+        }
+        const langs = [];
+        for (const code in file.languages) {
+            if (file.languages[code]) {
+                langs.push(new Language_1.default(code, path.join(this._path, file.languages[code])));
+            }
+        }
+        return langs;
     }
     get name() {
         return this._name;
