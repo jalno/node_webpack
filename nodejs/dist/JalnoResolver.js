@@ -96,6 +96,9 @@ class JalnoResolver {
                 front = item;
             }
         }
+		if (!front) {
+			return;
+		}
         let packageManager = realPackageManager;
         if (JalnoResolver.modules[name] !== undefined) {
             let modulePackageRegex;
