@@ -8,9 +8,12 @@ class Translator {
     static addLang(code, file) {
         Translator._langs.push(new Language_1.default(code, file));
     }
-    static async exportFile() {
+    static async exportFile(activeLanguages) {
         const langs = {};
         for (const lang of Translator._langs) {
+            if (activeLanguages !== undefined && activeLanguages.indexOf(lang.code) === -1) {
+                continue;
+            }
             if (langs[lang.code] === undefined) {
                 langs[lang.code] = [];
             }
@@ -50,5 +53,5 @@ exports.default = Translator`;
         return path.resolve("..", "..", "assets", "js", "Translator.js");
     }
 }
-Translator._langs = [];
 exports.default = Translator;
+Translator._langs = [];

@@ -7,11 +7,14 @@ export default class Translator {
 	public static addLang(code: string, file: string) {
 		Translator._langs.push(new Language(code, file));
 	}
-	public static async exportFile() {
+	public static async exportFile(activeLanguages?: string[]) {
 		const langs: {
 			[code: string]: string[],
 		} = {};
 		for (const lang of Translator._langs) {
+			if (activeLanguages !== undefined && activeLanguages.indexOf(lang.code) === -1) {
+				continue;
+			}
 			if (langs[lang.code] === undefined) {
 				langs[lang.code] = [];
 			}

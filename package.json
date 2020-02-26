@@ -1,13 +1,12 @@
 {
-	"permissions": "*",
 	"dependencies": ["base"],
 	"autoload": {
-		"directories": ["listeners"]
+		"directories": ["listeners", "processes"]
 	},
 	"events": [
 		{
-			"name":"\\packages\\base\\view\\events\\beforeLoad",
-			"listener": "listeners\\Base@beforeLoadView"
+			"name":"packages/base/view/events/beforeLoad",
+			"listener": "listeners/Base@beforeLoadView"
 		}
 	]
 }

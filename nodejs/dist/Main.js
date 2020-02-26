@@ -8,6 +8,7 @@ const util_1 = require("util");
 const LessLoaderHelper_1 = require("./LessLoaderHelper");
 const Package_1 = require("./Package");
 const Translator_1 = require("./Translator");
+const JalnoOptions_1 = require("./JalnoOptions");
 class Main {
     static async run() {
         if (process.argv.length > 2) {
@@ -51,6 +52,7 @@ class Main {
             }
         }
         process.chdir(__dirname);
+        Main.jalnoOptions = await JalnoOptions_1.default.load();
         await Main.initDependencies();
         const packages = await Main.initPackages();
         const fronts = [];
@@ -80,7 +82,7 @@ class Main {
                 if (!entries.hasOwnProperty("common")) {
                     entries.common = [];
                 }
-                await Translator_1.default.exportFile();
+                await Translator_1.default.exportFile(Main.jalnoOptions.availableLangs);
                 entries.common.push(Translator_1.default.filePath);
             }
         }
@@ -623,10 +625,10 @@ module.exports = {
         await util_1.promisify(fs.writeFile)(path.resolve("..", "webpack.config.js"), config, "UTF8");
     }
 }
+exports.default = Main;
 Main.watch = false;
 Main.skipInstall = false;
 Main.writeWebpackConfig = false;
 Main.skipWebpack = false;
 Main.clean = false;
 Main.mode = "development";
-exports.default = Main;

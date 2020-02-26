@@ -5,11 +5,12 @@ import * as path from "path";
 import { promisify } from "util";
 import * as webpackTypes from "webpack";
 import Front from "./Front";
-import { IModules } from "./JalnoResolver";
+import JalnoResolver, { IModules } from "./JalnoResolver";
 import Language from "./Language";
 import LessLoaderHelper from "./LessLoaderHelper";
 import Package from "./Package";
 import Translator from "./Translator";
+import JalnoOptions from "./JalnoOptions";
 
 export interface IEntries {
 	[key: string]: string[];
@@ -60,6 +61,7 @@ export default class Main {
 			}
 		}
 		process.chdir(__dirname);
+		Main.jalnoOptions = await JalnoOptions.load();
 		await Main.initDependencies();
 		const packages = await Main.initPackages();
 		const fronts: Front[] = [];
@@ -89,7 +91,7 @@ export default class Main {
 				if (!entries.hasOwnProperty("common")) {
 					entries.common = [];
 				}
-				await Translator.exportFile();
+				await Translator.exportFile(Main.jalnoOptions.availableLangs);
 				entries.common.push(Translator.filePath);
 			}
 		}
@@ -118,6 +120,7 @@ export default class Main {
 	private static skipWebpack = false;
 	private static clean = false;
 	private static mode: webpackMode = "development";
+	private static jalnoOptions: JalnoOptions;
 	private static checkArgs() {
 		for (let i = 2; i < process.argv.length; i++) {
 			switch (process.argv[i]) {
