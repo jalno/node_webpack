@@ -2,26 +2,32 @@
 namespace packages\node_webpack\listeners;
 
 use packages\base\{packages, json, IO\file, IO\directory, frontend\theme, view\events\beforeLoad};
-
+use packages\criticalcss\listeners\MVC as CriticalCSS;
 class Base {
 	public function beforeLoadView(beforeLoad $event) {
 		$view = $event->getView();
+		
 		$sources = theme::byName($view->getSource()->getName());
+		$webpackAssets = $this->checkAssetsForWebpack($sources);
 		$view->clearAssets();
-		foreach ($this->checkAssetsForWebpack($sources) as $asset) {
+
+		foreach ($webpackAssets as $asset) {
 			if ($asset["type"] == "css") {
 				if (isset($asset["file"])) {
 					$view->addCSSFile($asset["file"] . ((isset($asset["hash"]) and $asset["hash"]) ? "?{$asset['hash']}" : ""), isset($asset["name"]) ? $asset["name"] : "");
 				} else if (isset($asset["inline"])) {
 					$view->addCSS($asset["inline"], isset($asset["name"]) ? $asset["name"] : "");
 				}
-			} else if ($asset["type"] == "js") {
+			} elseif ($asset["type"] == "js") {
 				if (isset($asset["file"])) {
 					$view->addJSFile($asset["file"] . ((isset($asset["hash"]) and $asset["hash"]) ? "?{$asset['hash']}" : ""), isset($asset["name"]) ? $asset["name"] : "");
 				} else if (isset($asset["inline"])) {
 					$view->addJS($asset["inline"], isset($asset["name"]) ? $asset["name"] : "");
 				}
 			}
+		}
+		if (class_exists(CriticalCSS::class)) {
+			CriticalCSS::injectCriticalCSS($view);
 		}
 	}
 	public function checkAssetsForWebpack(array $sources): array {
