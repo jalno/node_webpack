@@ -5,12 +5,12 @@ import * as path from "path";
 import { promisify } from "util";
 import * as webpackTypes from "webpack";
 import Front from "./Front";
+import JalnoOptions from "./JalnoOptions";
 import JalnoResolver, { IModules } from "./JalnoResolver";
 import Language from "./Language";
 import LessLoaderHelper from "./LessLoaderHelper";
 import Package from "./Package";
 import Translator from "./Translator";
-import JalnoOptions from "./JalnoOptions";
 
 export interface IEntries {
 	[key: string]: string[];
@@ -232,7 +232,7 @@ Options:
 		const webpack = require("webpack");
 		const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 		const OptimizeCSSAssetsPlugin = require("optimize-css-assets-webpack-plugin");
-		const UglifyJsPlugin = require("uglifyjs-webpack-plugin");
+		const TerserPlugin = require("terser-webpack-plugin");
 		const precss = require("precss");
 		const autoprefixer = require("autoprefixer");
 		const outputPath = path.resolve("..", "..", "storage", "public", "frontend", "dist");
@@ -248,13 +248,13 @@ Options:
 				devtool: false,
 				optimization: {
 					minimizer: [
-						new UglifyJsPlugin({
-							uglifyOptions: {
-								minimize: false,
-								  output: {
+						new TerserPlugin({
+							terserOptions: {
+								output: {
 									comments: false,
-								  },
+								},
 							},
+							extractComments: false,
 						}),
 						new OptimizeCSSAssetsPlugin({}),
 					],
@@ -500,7 +500,7 @@ Options:
 const path = require("path");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const OptimizeCSSAssetsPlugin = require("optimize-css-assets-webpack-plugin");
-const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
+const TerserPlugin = require("terser-webpack-plugin");
 const precss = require("precss");
 const autoprefixer = require("autoprefixer");
 const JalnoResolver = require("./dist/JalnoResolver").default;
@@ -538,13 +538,13 @@ module.exports = {
 	devtool: false,
 	optimization: {
 		minimizer: [
-			new UglifyJsPlugin({
-				uglifyOptions: {
-					minimize: false,
-					  output: {
+			new TerserPlugin({
+				terserOptions: {
+					output: {
 						comments: false,
-					  },
+					},
 				},
+				extractComments: false,
 			}),
 			new OptimizeCSSAssetsPlugin({}),
 		],

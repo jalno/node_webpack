@@ -5,10 +5,10 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const util_1 = require("util");
+const JalnoOptions_1 = require("./JalnoOptions");
 const LessLoaderHelper_1 = require("./LessLoaderHelper");
 const Package_1 = require("./Package");
 const Translator_1 = require("./Translator");
-const JalnoOptions_1 = require("./JalnoOptions");
 class Main {
     static async run() {
         if (process.argv.length > 2) {
@@ -211,7 +211,7 @@ Options:
         const webpack = require("webpack");
         const MiniCssExtractPlugin = require("mini-css-extract-plugin");
         const OptimizeCSSAssetsPlugin = require("optimize-css-assets-webpack-plugin");
-        const UglifyJsPlugin = require("uglifyjs-webpack-plugin");
+        const TerserPlugin = require("terser-webpack-plugin");
         const precss = require("precss");
         const autoprefixer = require("autoprefixer");
         const outputPath = path.resolve("..", "..", "storage", "public", "frontend", "dist");
@@ -227,13 +227,13 @@ Options:
                 devtool: false,
                 optimization: {
                     minimizer: [
-                        new UglifyJsPlugin({
-                            uglifyOptions: {
-                                minimize: false,
+                        new TerserPlugin({
+                            terserOptions: {
                                 output: {
                                     comments: false,
                                 },
                             },
+                            extractComments: false,
                         }),
                         new OptimizeCSSAssetsPlugin({}),
                     ],
@@ -483,7 +483,7 @@ Options:
 const path = require("path");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const OptimizeCSSAssetsPlugin = require("optimize-css-assets-webpack-plugin");
-const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
+const TerserPlugin = require("terser-webpack-plugin");
 const precss = require("precss");
 const autoprefixer = require("autoprefixer");
 const JalnoResolver = require("./dist/JalnoResolver").default;
@@ -521,13 +521,13 @@ module.exports = {
 	devtool: false,
 	optimization: {
 		minimizer: [
-			new UglifyJsPlugin({
-				uglifyOptions: {
-					minimize: false,
-					  output: {
+			new TerserPlugin({
+				terserOptions: {
+					output: {
 						comments: false,
-					  },
+					},
 				},
+				extractComments: false,
 			}),
 			new OptimizeCSSAssetsPlugin({}),
 		],
