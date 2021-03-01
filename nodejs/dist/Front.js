@@ -10,7 +10,7 @@ class Front {
     constructor(_package, _name) {
         this._package = _package;
         this._name = _name;
-        this.entriesTypes = ["css", "less", "scss", "sass", "js", "ts"];
+        this.entriesTypes = ["css", "less", "scss", "sass", "js", "ts", "tsx"];
         this._path = _package.path + "/" + _name;
     }
     static unserialize(data) {

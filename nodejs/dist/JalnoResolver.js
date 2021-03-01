@@ -70,7 +70,7 @@ class JalnoResolver {
             return false;
         }
         let found = false;
-        let exts = [".ts", ".js"];
+        let exts = [".ts", ".tsx", ".js"];
         exts = exts.sort();
         for (let i = 0; i < exts.length && !found; i++) {
             if (userRequest.substr(-exts[i].length) === exts[i]) {
@@ -219,7 +219,7 @@ class JalnoResolver {
                 const lastSplash = newModule.request.lastIndexOf("/");
                 if (lastSplash >= 0) {
                     const filename = newModule.request.substr(lastSplash + 1);
-                    const formats = ["ts", "js", "less", "css", "scss", "sass"];
+                    const formats = ["ts", "tsx", "js", "less", "css", "scss", "sass"];
                     const dot = filename.lastIndexOf(".");
                     const ext = dot !== -1 ? filename.substr(dot + 1) : "";
                     if (formats.indexOf(ext) === -1) {

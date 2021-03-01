@@ -22,7 +22,7 @@ export default class Front {
 		return new Front(Package.unserialize(data._package), data._name);
 	}
 	private _path: string;
-	private entriesTypes = ["css", "less", "scss", "sass", "js", "ts"];
+	private entriesTypes = ["css", "less", "scss", "sass", "js", "ts", "tsx"];
 	public constructor(private _package: Package, private _name: string) {
 		this._path = _package.path + "/" + _name;
 	}

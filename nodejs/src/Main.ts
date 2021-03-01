@@ -280,7 +280,7 @@ Options:
 						new Main.JalnoResolver("module", "resolve"),
 						new LessLoaderHelper("resolve", "resolve"),
 					],
-					extensions: [".ts", ".js", ".less", ".css", ".sass", ".scss"],
+					extensions: [".ts", ".tsx", ".js", ".less", ".css", ".sass", ".scss"],
 				},
 				module: {
 					rules: [
@@ -570,7 +570,7 @@ module.exports = {
 			new JalnoResolver("module", "resolve"),
 			new LessLoaderHelper("resolve", "resolve"),
 		],
-		extensions: [".ts", ".js", ".less", ".css", ".sass", ".scss"],
+		extensions: [".ts", ".tsx", ".js", ".less", ".css", ".sass", ".scss"],
 	},
 	module: {
 		rules: [
