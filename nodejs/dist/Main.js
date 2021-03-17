@@ -12,12 +12,12 @@ const Translator_1 = require("./Translator");
 class Main {
     static async run() {
         if (process.argv.length > 2) {
-            Main.checkArgs();
+            await Main.checkArgs();
             if (process.argv.indexOf("-h") !== -1 || process.argv.indexOf("--help") !== -1) {
                 return Main.introduce();
             }
-            for (let i = 2; i < process.argv.length; i++) {
-                switch (process.argv[i]) {
+            for (const arg of Main.args) {
+                switch (typeof arg === "string" ? arg : arg[0]) {
                     case "-w":
                     case "--watch":
                         Main.watch = true;
@@ -48,8 +48,15 @@ class Main {
                         Main.mode = "production";
                         console.log("run webpack on production mode");
                         break;
+                    case "--tsconfig":
+                        Main.tsconfig = arg[1];
+                        console.log(`Use tsconfig file in path ${Main.tsconfig}`);
+                        break;
                 }
             }
+        }
+        if (!Main.tsconfig) {
+            Main.tsconfig = path.resolve("tsconfig.json");
         }
         process.chdir(__dirname);
         Main.jalnoOptions = await JalnoOptions_1.default.load();
@@ -103,9 +110,24 @@ class Main {
         jalno.modules = modules;
         await util_1.promisify(fs.writeFile)(path.resolve("..", "jalno.json"), JSON.stringify(jalno, null, 2), "UTF8");
     }
-    static checkArgs() {
+    static async checkArgs() {
+        Main.args = [];
         for (let i = 2; i < process.argv.length; i++) {
-            switch (process.argv[i]) {
+            let arg = "";
+            if (process.argv[i].search("=") > -1) {
+                arg = process.argv[i].split("=");
+            }
+            else {
+                arg = process.argv[i];
+            }
+            let isString = (typeof arg === "string");
+            if (isString && arg === "--tsconfig" && (i + 1) in process.argv && !process.argv[i + 1].startsWith("--")) {
+                i++;
+                arg = [arg, process.argv[i]];
+                isString = false;
+            }
+            const key = (isString ? arg : arg[0]);
+            switch (key) {
                 case "-h":
                 case "--help":
                 case "-w":
@@ -120,11 +142,31 @@ class Main {
                 case "--install":
                 case "--skip-webpack":
                 case "--production":
-                    continue;
+                    if (!isString) {
+                        arg = key;
+                    }
+                    break;
+                case "--tsconfig":
+                    if (arg.length !== 2 || arg[1].length === 0) {
+                        console.error(`\u001b[1m\u001b[31mError: switch 'tsconfig' requires an address\u001b[39m\u001b[22m`);
+                        process.exit(1);
+                    }
+                    if (!arg[1].startsWith("packages")) {
+                        console.error(`\u001b[1m\u001b[31mError: tsconfig path must start with 'packages'\u001b[39m\u001b[22m`);
+                        process.exit(1);
+                    }
+                    const tsconfigPath = path.resolve("..", "..", "..", ...arg[1].split("/"));
+                    if (!await util_1.promisify(fs.exists)(tsconfigPath)) {
+                        console.error(`\u001b[1m\u001b[31mError: Can not find any tsconfig file in ${tsconfigPath}\u001b[39m\u001b[22m`);
+                        process.exit(1);
+                    }
+                    arg[1] = tsconfigPath;
+                    break;
                 default:
-                    console.error(`\u001b[1m\u001b[31mCommand line option ${process.argv[i]} is not understood in combination with the other options\u001b[39m\u001b[22m`);
+                    console.error(`\u001b[1m\u001b[31mCommand line option ${key} is not understood in combination with the other options\u001b[39m\u001b[22m`);
                     process.exit(1);
             }
+            Main.args.push(arg);
         }
         if ((process.argv.indexOf("--skip-install") !== -1 || process.argv.indexOf("--webpack") !== -1) &&
             (process.argv.indexOf("-i") !== -1 || process.argv.indexOf("--skip-webpack") !== -1 || process.argv.indexOf("--install") !== -1) &&
@@ -149,11 +191,12 @@ Most used commands:
 	start - install dependencies and run webpack
 Options:
 	-h, --help			Print this message.
-	--w, --watch			Turn on webpack watch mode. This means that after the initial build, webpack will continue to watch for changes in any of the resolved files.
+	-w, --watch			Turn on webpack watch mode. This means that after the initial build, webpack will continue to watch for changes in any of the resolved files.
 	--wwc, --write-webpack-config	Export webpack config to webpack.config.js .
 	--webpack, --skip-install	Skip install dependencies and just run webpack.
 	-i, --install, --skip-webpack	Skip webpack and just install dependencies.
-	--c, --clear			Remove package node_modules.
+	-c, --clear			Remove package node_modules.
+	--tsconfig			Set tsconfig.json file [default is node_webpack tsconfig]
 	--production			Change webpack mode to production [default is development]`);
     }
     static async initPackages() {
@@ -305,6 +348,7 @@ Options:
                             test: /\.tsx?$/,
                             loader: "ts-loader",
                             options: {
+                                configFile: require.resolve(Main.tsconfig),
                                 transpileOnly: true,
                                 logLevel: "warn",
                                 compilerOptions: {
@@ -478,6 +522,7 @@ Options:
             fronts: fronts,
             entries: entries,
             modules: modules,
+            tsconfig: Main.tsconfig,
         }, null, 2), "UTF8");
         const config = `const webpack = require("webpack");
 const path = require("path");
@@ -599,6 +644,7 @@ module.exports = {
 				test: /\\.tsx?$/,
 				loader: "ts-loader",
 				options: {
+					configFile: require.resolve(jalno.tsconfig),
 					transpileOnly: true,
 					logLevel: "warn",
 					compilerOptions: {
@@ -632,3 +678,4 @@ Main.writeWebpackConfig = false;
 Main.skipWebpack = false;
 Main.clean = false;
 Main.mode = "development";
+Main.args = [];
