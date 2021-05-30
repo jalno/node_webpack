@@ -217,36 +217,29 @@ Options:
         if (Main.skipInstall) {
             return;
         }
-        let npmBin = "";
         try {
-            const out = await util_1.promisify(child_process.exec)("npm root -g");
-            npmBin = out.stdout.trimEnd() + "/npm";
-        }
-        catch (e) {
+            await util_1.promisify(child_process.exec)("npm root -g");
+        } catch (e) {
             throw new Error("Cannot find npm on this environment");
         }
-        Main.npm = require(npmBin);
         await Main.installDependencies();
     }
     static async installDependencies(where = "") {
         if (Main.skipInstall) {
             return;
         }
-        await new Promise((resolve, reject) => {
-            Main.npm.load((err, result) => {
-                if (err) {
-                    return reject(err);
+        where = where || path.resolve(__dirname, "../");
+
+        return new Promise((resolve, reject) => {
+            console.log(`run npm install on ${where}`);
+            const npm = child_process.spawn("npm", ["install"], { cwd: where, stdio: 'inherit' });
+            npm.on("close", (code) => {
+                console.log("\n\n"); // This make webpack output visible
+                if (code == 0) {
+                    resolve();
+                } else {
+                    reject();
                 }
-                resolve(result);
-            });
-        });
-        await new Promise((resolve, reject) => {
-            Main.npm.config.set("unsafe-perm", true);
-            Main.npm.commands.install(where, [], (err, result, result2, result3, result4) => {
-                if (err) {
-                    return reject(err);
-                }
-                resolve({ result, result2, result3, result4 });
             });
         });
     }
