@@ -231,6 +231,11 @@ Options:
         where = where || path.resolve(__dirname, "../");
 
         return new Promise((resolve, reject) => {
+            console.log(`check ${where}/package.json is exists?`);
+            if (!fs.existsSync(`${where}/package.json`)) {
+                console.log("is not exists, so skip this");
+                return resolve();
+            }
             console.log(`run npm install on ${where}`);
             const npm = child_process.spawn("npm", ["install"], { cwd: where, stdio: 'inherit' });
             npm.on("close", (code) => {
