@@ -12,7 +12,7 @@
 		"start": "node ./dist/App.js"
 	},
 	"engines": {
-		"node": "^10.16.0"
+		"node": ">=10.16.0"
 	},
 	"dependencies": {
 		"autoprefixer": "~9.6.1",
