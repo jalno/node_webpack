@@ -9,7 +9,7 @@
 	"scripts": {
 		"build": "tsc",
 		"watch": "tsc -w",
-		"start": "node ./dist/App.js"
+		"start": "bun ./dist/App.ts"
 	},
 	"engines": {
 		"node": ">=10.16.0"

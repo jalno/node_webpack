@@ -205,8 +205,9 @@ export default class Main {
 		}
 	}
 	private static introduce() {
+		console.table('process.env', process.env)
 		console.log(`Node Webpack ${process.env.npm_package_version}\n
-usage npm run [options] [-- ...args] command\n
+usage bun run [options] [-- ...args] command\n
 node webpack is a commandline package manager and provides commands for
 installing and managing as well as querying information about packages.\n
 Most used commands:
@@ -241,9 +242,9 @@ Options:
 			return;
 		}
 		try {
-			await promisify(child_process.exec)("npm root -g");
+			await promisify(child_process.exec)("bun --help");
 		} catch (e) {
-			throw new Error("Cannot find npm on this environment");
+			throw new Error("Cannot find bun on this environment");
 		}
 		await Main.installDependencies();
 	}
@@ -259,9 +260,9 @@ Options:
 				console.log("is not exists, so skip this");
 				return resolve();
 			}
-			console.log(`run npm install on ${where}`);
-			const npm = child_process.spawn("npm", ["install"], { cwd: where, stdio: 'inherit' });
-			npm.on("close", (code) => {
+			console.log(`run bun install on ${where}`);
+			const bun = child_process.spawn("bun", ["install"], { cwd: where, stdio: 'inherit' });
+			bun.on("close", (code) => {
 				console.log("\n\n"); // This make webpack output visible
 				if (code == 0) {
 					resolve();
