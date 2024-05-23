@@ -1,10 +1,10 @@
 <?php
-namespace packages\node_webpack\listeners;
+namespace packages\node_webpack\Listeners;
 
-use packages\base\{packages, json, IO\file, IO\directory, frontend\theme, view\events\beforeLoad};
-use packages\criticalcss\listeners\MVC as CriticalCSS;
+use packages\base\{Packages, Json, IO\File, IO\Directory, Frontend\Theme, View\Events\BeforeLoad};
+use packages\criticalcss\Listeners\MVC as CriticalCSS;
 class Base {
-	public function beforeLoadView(beforeLoad $event) {
+	public function beforeLoadView(BeforeLoad $event) {
 		$view = $event->getView();
 		
 		$sources = theme::byName($view->getSource()->getName());
@@ -37,7 +37,7 @@ class Base {
 		$commonAssets = [];
 		if (isset($result["outputedFiles"]["common"])) {
 			foreach ($result["outputedFiles"]["common"] as $file) {
-				$file = new file\local($file["name"]);
+				$file = new File\Local($file["name"]);
 				$commonAssets[] = array(
 					"type" => $file->getExtension(),
 					"file" => "/".$file->getPath()
@@ -54,7 +54,7 @@ class Base {
 			}
 			if (isset($result["outputedFiles"][$name])) {
 				foreach ($result["outputedFiles"][$name] as $item) {
-					$file = new file\local($item["name"]);
+					$file = new File\Local($item["name"]);
 					if (! in_array($file->getPath(), $filteredFiles)) {
 						$filteredAssets[] = array(
 							"type" => $file->getExtension(),
@@ -81,7 +81,7 @@ class Base {
 		return array_merge($commonAssets, $filteredAssets);
 	}
 	private function getWebpackResult(): array {
-		$nodejs = new directory\local(packages::package("node_webpack")->getFilePath("nodejs"));
+		$nodejs = new Directory\Local(Packages::package("node_webpack")->getFilePath("nodejs"));
 		$result = array();
 		$resultFile = $nodejs->file("result.json");
 		if ($resultFile->exists()) {

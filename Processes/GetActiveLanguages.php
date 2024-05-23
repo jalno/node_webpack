@@ -1,7 +1,7 @@
 <?php
-namespace packages\node_webpack\processes;
+namespace packages\node_webpack\Processes;
 
-use packages\base\{Process, Translator, json};
+use packages\base\{Process, Translator, Json};
 
 class GetJalnoOptions extends Process {
 	public function getAvailableLangs() {
