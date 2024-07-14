@@ -1,12 +1,11 @@
 {
-	"dependencies": ["base"],
 	"autoload": {
 		"directories": ["listeners", "processes"]
 	},
 	"events": [
 		{
-			"name":"packages/base/view/events/beforeLoad",
-			"listener": "listeners/Base@beforeLoadView"
+			"name":"packages/base/View/Events/BeforeLoad",
+			"listener": "packages/node_webpack/Listeners/Base@beforeLoadView"
 		}
 	]
 }
